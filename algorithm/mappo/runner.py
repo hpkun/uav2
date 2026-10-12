@@ -21,7 +21,7 @@ from algorithm.common.checkpoint import (
     evaluation_selection_key,
     validate_checkpoint_for_resume,
 )
-from algorithm.common.protocol import config_sha256
+from algorithm.common.protocol import config_sha256, validate_single_round_environment_config
 
 
 class MAPPOTrainingRunner:
@@ -31,6 +31,7 @@ class MAPPOTrainingRunner:
                  device: str | None = None, seed: int | None = None,
                  output_dir: str | Path | None = None,
                  smoke: bool = False) -> None:
+        validate_single_round_environment_config(env_config)
         self.env_config, self.algorithm_config = env_config, algorithm_config
         self.smoke = bool(smoke)
         training, network = algorithm_config["training"], algorithm_config["network"]
@@ -359,7 +360,9 @@ class MAPPOTrainingRunner:
     def resume(self, path: str | Path) -> None:
         state = torch.load(path, map_location="cpu", weights_only=False)
         validate_checkpoint_for_resume(
-            state, self.env_config, self.algorithm_config
+            state, self.env_config, self.algorithm_config,
+            expected_training_seed=self.seed, expected_num_envs=self.num_envs,
+            expected_smoke=self.smoke,
         )
         extra = self.trainer.load(path)
         previous = np.asarray(extra.get("episode_indices", [0] * self.num_envs), dtype=np.int64)

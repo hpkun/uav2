@@ -1,6 +1,7 @@
 """CUDA training smoke for both baselines with real episode/reset evidence."""
 from pathlib import Path
 import json
+import argparse
 import sys
 import torch
 import yaml
@@ -15,7 +16,9 @@ from env.factory import make_combat_environment
 def main():
     if not torch.cuda.is_available():
         raise RuntimeError('CUDA mandatory for smoke tests')
-    root = ROOT / 'outputs' / 'single_round_acceptance_final'
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--output-dir', type=Path, default=ROOT / 'outputs/single_round_acceptance_final')
+    root = parser.parse_args().output_dir
     cfg = yaml.safe_load((ROOT / 'configs/single_round_environment.yaml').read_text())
     evidence = {}
     for name, runner_type, filename in (

@@ -6,7 +6,7 @@ from typing import Any
 from env.config import ENVIRONMENT_VERSION
 from env.combat_env import MultiUAVCombatEnv
 from env.observation import observation_dim_from_config
-from algorithm.common.protocol import config_sha256
+from algorithm.common.protocol import config_sha256, validate_single_round_environment_config
 
 
 def _checkpoint_extra(state: dict[str, Any]) -> dict[str, Any]:
@@ -59,7 +59,7 @@ def _validate_common_checkpoint_contract(
     algorithm_config: dict[str, Any],
 ) -> None:
     from algorithm.mappo.trainer import MAPPO_IMPL_VERSION
-
+    validate_single_round_environment_config(env_config)
     if state.get("algorithm") != "MAPPO":
         raise RuntimeError("checkpoint is not a MAPPO checkpoint")
     extra = _checkpoint_extra(state)
@@ -105,6 +105,7 @@ def _validate_common_checkpoint_contract(
 def validate_checkpoint_environment(
     state: dict[str, Any], env_config: dict[str, Any]
 ) -> None:
+    validate_single_round_environment_config(env_config)
     extra = _checkpoint_extra(state)
     version = extra.get("environment_version")
     if version != ENVIRONMENT_VERSION:
@@ -126,6 +127,8 @@ def validate_checkpoint_for_resume(
     state: dict[str, Any],
     env_config: dict[str, Any],
     algorithm_config: dict[str, Any],
+    *, expected_training_seed: int | None = None,
+    expected_num_envs: int | None = None, expected_smoke: bool = False,
 ) -> None:
     """Validate a checkpoint for strict continuation of the original run."""
     _validate_common_checkpoint_contract(state, env_config, algorithm_config)
@@ -142,9 +145,15 @@ def validate_checkpoint_for_resume(
     for label, expected in (
         ("environment_config_sha256", config_sha256(env_config)),
         ("algorithm_config_sha256", config_sha256(algorithm_config)),
+        ("training_seed", algorithm_config["training"]["seed"] if expected_training_seed is None else expected_training_seed),
+        ("training_num_envs", algorithm_config["training"]["num_train_envs"] if expected_num_envs is None else expected_num_envs),
+        ("training_gamma", float(algorithm_config["training"]["gamma"])),
+        ("training_smoke", expected_smoke),
     ):
+        if label not in extra:
+            raise RuntimeError(f"checkpoint required metadata missing: {label}")
         recorded = extra.get(label)
-        if recorded is not None and recorded != expected:
+        if recorded != expected:
             raise RuntimeError(
                 f"checkpoint {label} mismatch: expected {expected!r}, "
                 f"got {recorded!r}"
@@ -167,6 +176,10 @@ def validate_checkpoint_for_evaluation(
             "checkpoint environment_variant mismatch: expected "
             f"{target_variant!r}, got {checkpoint_variant!r}"
         )
+    for label, expected in (("environment_config_sha256", config_sha256(env_config)),
+                            ("algorithm_config_sha256", config_sha256(algorithm_config))):
+        if _checkpoint_extra(state).get(label) != expected:
+            raise RuntimeError(f"checkpoint {label} missing or mismatch")
 
 
 def evaluation_selection_key(record: dict[str, Any]) -> tuple[float, float, float]:

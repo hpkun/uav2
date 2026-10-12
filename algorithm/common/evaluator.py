@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 from typing import Any
 from env.factory import make_combat_environment
+from algorithm.common.protocol import validate_single_round_environment_config
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -61,6 +62,9 @@ def aggregate_episode_records(records: list[dict[str, Any]]) -> dict[str, float]
 
 
 def evaluate(actor, config=DEFAULT_COMBAT_CONFIG, seeds=range(10_000_000, 10_000_020)) -> dict[str, float]:
+    from env.config import load_config
+    config = load_config(config) if not isinstance(config, dict) else config
+    validate_single_round_environment_config(config)
     records = []
     policy_rows: list[dict[str, float]] = []
     for seed in seeds:

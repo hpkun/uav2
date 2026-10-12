@@ -43,3 +43,24 @@ contract; MAPPO retains continuation with fresh episode seeds.
 Historical research sources and experiments are documented in
 [legacy/README.md](legacy/README.md), outside formal imports and test collection.
 The acceptance report and exact file inventory are in `reports/`.
+
+Formal MAPPO and MADSAC training and evaluation share one validator for version
+2.3, variant single_round_v1, dt=0.1, max_steps=1000, team_size=4, and dimensions
+52/3/4. Smoke runs keep this environment contract. Low-level environment unit
+tests may still use shorter time limits. MAPPO resume requires complete matching
+configuration fingerprints, seed, environment count, gamma, and smoke identity.
+
+The reproducible audit uses baseline commit
+`8d09df1fd1e6d2425b712d0c336e9525cd313c4c`. Structural audit works after a clean
+clone without local smoke checkpoints and writes ignored output files:
+
+```powershell
+python tools/audit_single_round.py
+python tools/smoke_single_round.py --output-dir outputs/protocol_smoke
+python tools/audit_single_round.py --checkpoint-dir outputs/protocol_smoke
+```
+
+`changed_files.csv` describes committed baseline-to-HEAD changes. Frozen source
+and archived-content checks compare baseline blobs with the current files and
+ignore the Git index. Optional checkpoint audit requires CUDA. See
+`reports/protocol_closure_acceptance.md` for the final protocol acceptance results.

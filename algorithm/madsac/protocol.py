@@ -1,23 +1,16 @@
 """Strict MADSAC checkpoint and experiment identity validation."""
 from __future__ import annotations
 
-from algorithm.common.protocol import config_sha256
-from env.observation import observation_dim_from_config
+from algorithm.common.protocol import config_sha256, validate_single_round_environment_config
 from .trainer import MADSAC_IMPL_VERSION
 
 
 def validate_madsac_config(env_config: dict, algorithm_config: dict) -> None:
+    validate_single_round_environment_config(env_config)
     n, t, i = algorithm_config["network"], algorithm_config["training"], algorithm_config["implementation"]
     if algorithm_config.get("algorithm") != "madsac":
         raise RuntimeError("algorithm config is not madsac")
-    if env_config.get("environment_variant") != "single_round_v1":
-        raise RuntimeError("MADSAC formal environment must be single_round_v1")
-    if str(env_config.get("environment_version")) != "2.3":
-        raise RuntimeError("MADSAC environment_version must be 2.3")
-    if int(env_config["simulation"]["max_steps"]) != 1000:
-        raise RuntimeError("MADSAC formal task requires max_steps=1000")
-    expected = (observation_dim_from_config(env_config.get("observation", {})), 3,
-                int(env_config.get("scenario", {}).get("team_size", -1)))
+    expected = (52, 3, 4)
     actual = (int(n["observation_dim"]), int(n["action_dim"]), int(n["num_agents"]))
     if actual != expected or actual != (52, 3, 4):
         raise RuntimeError(f"MADSAC dimension mismatch: {actual} vs {expected}")

@@ -1,5 +1,11 @@
 from __future__ import annotations
 
+from pathlib import Path
+import yaml
+
+def formal_config():
+    return yaml.safe_load((Path(__file__).resolve().parents[1] / "configs/single_round_environment.yaml").read_text())
+
 import numpy as np
 import pytest
 import torch
@@ -257,9 +263,9 @@ def test_evaluation_modes_and_rng_isolation(monkeypatch):
         }
 
     monkeypatch.setattr("algorithm.madsac.evaluation.evaluate_madsac_episode", fake_episode)
-    stochastic1 = evaluate_madsac(trainer, {}, (44_000_000, 44_000_001), "stochastic", 770001)
-    stochastic2 = evaluate_madsac(trainer, {}, (44_000_000, 44_000_001), "stochastic", 770001)
-    deterministic = evaluate_madsac(trainer, {}, (44_000_000, 44_000_001), "deterministic", 770001)
+    stochastic1 = evaluate_madsac(trainer, formal_config(), (44_000_000, 44_000_001), "stochastic", 770001)
+    stochastic2 = evaluate_madsac(trainer, formal_config(), (44_000_000, 44_000_001), "stochastic", 770001)
+    deterministic = evaluate_madsac(trainer, formal_config(), (44_000_000, 44_000_001), "deterministic", 770001)
     assert stochastic1 == stochastic2
     assert stochastic1["average_return"] != deterministic["average_return"]
     assert torch.equal(training_rng_before, trainer.policy_generator.get_state())
@@ -297,8 +303,8 @@ def test_per_scenario_policy_rng_is_stable_distinct_and_order_independent(monkey
 
     monkeypatch.setattr("algorithm.madsac.evaluation.evaluate_madsac_episode", fake_episode)
     training_before = trainer.policy_generator.get_state().clone()
-    evaluate_madsac(trainer, {}, (seed_a, seed_b), "stochastic", 770001)
-    evaluate_madsac(trainer, {}, (seed_b,), "stochastic", 770001)
+    evaluate_madsac(trainer, formal_config(), (seed_a, seed_b), "stochastic", 770001)
+    evaluate_madsac(trainer, formal_config(), (seed_b,), "stochastic", 770001)
     assert first_draws[seed_b][0] == first_draws[seed_b][1]
     assert torch.equal(training_before, trainer.policy_generator.get_state())
 

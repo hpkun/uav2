@@ -150,7 +150,6 @@ def test_mappo_update_is_finite_and_changes_both_networks():
 def test_mappo_runner_collects_true_parallel_on_policy_rollout(tmp_path):
     environment, algorithm = configs()
     environment = copy.deepcopy(environment)
-    environment["simulation"]["max_steps"] = 2
     runner = MAPPOTrainingRunner(
         environment, algorithm, num_envs=2, total_sampled_steps=8,
         output_dir=tmp_path, smoke=True,

@@ -147,12 +147,15 @@ def test_evaluation_metrics_equal_for_both_algorithms():
     class ZeroActor:
         def act(self, *_args, **_kwargs): return zeros()
     cfg = config()
-    cfg['simulation']['max_steps'] = 1
     mappo = evaluate(ZeroActor(), cfg, [10000000])
     env = make_combat_environment(cfg)
     env.reset(10000000)
-    _, reward, _, _, info = env.step(zeros())
-    records = [dict(info, episode_return=float(reward.sum()), mean_agent_episode_return=float(reward.mean()))]
+    total = np.zeros(4)
+    while True:
+        _, reward, terminated, truncated, info = env.step(zeros())
+        total += reward
+        if terminated or truncated: break
+    records = [dict(info, episode_return=float(total.sum()), mean_agent_episode_return=float(total.mean()))]
     madsac = aggregate_madsac_records(records)
     assert mappo == madsac == aggregate_episode_records(records)
     assert not any('wave' in key or key in {'Q2', 'Q3'} for key in mappo)

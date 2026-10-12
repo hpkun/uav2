@@ -123,7 +123,6 @@ def test_runner_fails_fast_on_network_environment_dimension_mismatch(
 def test_evaluator_exposes_split_combat_and_required_episode_metrics():
     environment, _ = configs()
     environment = copy.deepcopy(environment)
-    environment["simulation"]["max_steps"] = 1
 
     class ZeroActor:
         @staticmethod

@@ -5,6 +5,27 @@ import hashlib
 import json
 from pathlib import Path
 from typing import Any
+from env.observation import observation_dim_from_config
+from env.combat_env import MultiUAVCombatEnv
+
+
+def validate_single_round_environment_config(env_config: dict[str, Any]) -> None:
+    """Lock the formal environment identity; low-level unit environments stay flexible."""
+    for section in ("simulation", "scenario", "observation", "action"):
+        if not isinstance(env_config.get(section), dict):
+            raise RuntimeError(f"formal single-round configuration missing section: {section}")
+    checks = {
+        "environment_version": (env_config.get("environment_version"), "2.3"),
+        "environment_variant": (env_config.get("environment_variant"), "single_round_v1"),
+        "simulation.dt": (env_config.get("simulation", {}).get("dt"), 0.1),
+        "simulation.max_steps": (env_config.get("simulation", {}).get("max_steps"), 1000),
+        "scenario.team_size": (env_config.get("scenario", {}).get("team_size"), 4),
+        "observation_dim": (observation_dim_from_config(env_config.get("observation", {})), 52),
+        "action_dim": (env_config.get("action_dim", MultiUAVCombatEnv.action_dim), 3),
+    }
+    for label, (actual, expected) in checks.items():
+        if actual != expected:
+            raise RuntimeError(f"formal single-round {label} mismatch: expected {expected!r}, got {actual!r}")
 
 
 def canonical_json(value: Any) -> str:
@@ -78,6 +99,7 @@ def runtime_source_branch_provenance(
 
 
 __all__ = [
+    "validate_single_round_environment_config",
     "aggregate_runtime_source_manifest",
     "canonical_json",
     "config_sha256",

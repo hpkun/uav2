@@ -372,7 +372,6 @@ def main() -> None:
         resume_state = torch.load(
             resume_checkpoint, map_location="cpu", weights_only=False
         )
-        validate_checkpoint_for_resume(resume_state, env_config, algorithm_config)
         stored_run_config = load_run_config(output_dir)
     runtime = resolve_runtime_settings(
         algorithm_config,
@@ -384,6 +383,13 @@ def main() -> None:
         run_config=stored_run_config,
         checkpoint_state=resume_state,
     )
+    if resume_state is not None:
+        identity = runtime["original"] or runtime
+        validate_checkpoint_for_resume(
+            resume_state, env_config, algorithm_config,
+            expected_training_seed=identity["seed"], expected_num_envs=identity["num_envs"],
+            expected_smoke=identity["smoke"],
+        )
     if resume_state is not None and stored_run_config is not None:
         extra = resume_state.get("extra", {})
         expected_checkpoint_protocol = {
@@ -395,7 +401,7 @@ def main() -> None:
             "algorithm_config_sha256": config_sha256(algorithm_config),
         }
         for field, expected in expected_checkpoint_protocol.items():
-            if field in extra and extra[field] != expected:
+            if field not in extra or extra[field] != expected:
                 raise RuntimeError(
                     f"resume checkpoint {field} mismatch with original run protocol: "
                     f"expected {expected!r}, got {extra[field]!r}"
