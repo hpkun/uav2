@@ -65,8 +65,9 @@ class GroundAwareNearestTargetPursuitPolicy(NearestTargetPursuitPolicy):
     """Nearest-target pursuit with a stateless time-to-ground pitch guard."""
 
     def __init__(self, config: dict, action_config: dict,
-                 aircraft_config: dict) -> None:
+                 aircraft_config: dict, team_size: int = 4) -> None:
         super().__init__(config, action_config)
+        self.team_size = int(team_size)
         guard = config.get("ground_avoidance", {})
         self.guard_time_constants = float(guard["guard_time_constants"])
         self.downward_speed_epsilon = float(
@@ -87,9 +88,9 @@ class GroundAwareNearestTargetPursuitPolicy(NearestTargetPursuitPolicy):
         self.override_steps = 0
         self.activation_count = 0
         self.maximum_activation_duration_steps = 0
-        self._previous_override = np.zeros(4, dtype=bool)
-        self._current_duration = np.zeros(4, dtype=np.int64)
-        self.last_override_mask = np.zeros(4, dtype=bool)
+        self._previous_override = np.zeros(self.team_size, dtype=bool)
+        self._current_duration = np.zeros(self.team_size, dtype=np.int64)
+        self.last_override_mask = np.zeros(self.team_size, dtype=bool)
 
     def reset_transient_state(self) -> None:
         self._previous_override.fill(False)

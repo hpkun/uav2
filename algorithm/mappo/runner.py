@@ -11,6 +11,7 @@ import torch
 
 from env.config import ENVIRONMENT_VERSION
 from env.combat_env import MultiUAVCombatEnv
+from env.observation import observation_dim_from_config
 from .trainer import MAPPO_IMPL_VERSION, MAPPOTrainer, RolloutBatch
 from algorithm.common.evaluator import (
     episode_return_metrics,
@@ -38,8 +39,8 @@ class MAPPOTrainingRunner:
         implementation = algorithm_config["implementation"]
         configured = (int(network["observation_dim"]), int(network["action_dim"]),
                       int(network["num_agents"]))
-        expected = (MultiUAVCombatEnv.observation_dim, MultiUAVCombatEnv.action_dim,
-                    MultiUAVCombatEnv.team_size)
+        expected = (observation_dim_from_config(env_config["observation"]),
+                    MultiUAVCombatEnv.action_dim, int(env_config["scenario"]["team_size"]))
         if configured != expected:
             raise ValueError(f"network/environment dimension mismatch: configured obs/action/agents={configured}, environment={expected}")
         self.observation_dim, self.action_dim, self.num_agents = configured

@@ -7,25 +7,35 @@ from pathlib import Path
 from typing import Any
 from env.observation import observation_dim_from_config
 from env.combat_env import MultiUAVCombatEnv
+from env.config import attack_cooldown_steps
 
 
 def validate_single_round_environment_config(env_config: dict[str, Any]) -> None:
     """Lock the formal environment identity; low-level unit environments stay flexible."""
-    for section in ("simulation", "scenario", "observation", "action"):
+    for section in ("simulation", "scenario", "observation", "action", "attack"):
         if not isinstance(env_config.get(section), dict):
             raise RuntimeError(f"formal single-round configuration missing section: {section}")
+    variant = env_config.get("environment_variant")
+    if variant != "single_round_v2":
+        raise RuntimeError(f"formal single-round environment_variant mismatch: {variant!r}")
+    team_size = 4
     checks = {
         "environment_version": (env_config.get("environment_version"), "2.3"),
-        "environment_variant": (env_config.get("environment_variant"), "single_round_v1"),
         "simulation.dt": (env_config.get("simulation", {}).get("dt"), 0.1),
         "simulation.max_steps": (env_config.get("simulation", {}).get("max_steps"), 1000),
-        "scenario.team_size": (env_config.get("scenario", {}).get("team_size"), 4),
-        "observation_dim": (observation_dim_from_config(env_config.get("observation", {})), 52),
+        "scenario.team_size": (env_config.get("scenario", {}).get("team_size"), team_size),
+        "observation_dim": (observation_dim_from_config(env_config.get("observation", {})), 13 * team_size),
         "action_dim": (env_config.get("action_dim", MultiUAVCombatEnv.action_dim), 3),
+        "attack.cadence": (env_config.get("attack", {}).get("cadence"), "fixed_cooldown"),
+        "attack.cooldown_seconds": (env_config.get("attack", {}).get("cooldown_seconds"), 1.0),
     }
     for label, (actual, expected) in checks.items():
         if actual != expected:
             raise RuntimeError(f"formal single-round {label} mismatch: expected {expected!r}, got {actual!r}")
+    try:
+        attack_cooldown_steps(env_config)
+    except ValueError as error:
+        raise RuntimeError(f"formal single-round attack cadence: {error}") from error
 
 
 def canonical_json(value: Any) -> str:

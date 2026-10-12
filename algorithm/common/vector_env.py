@@ -86,6 +86,7 @@ class ParallelVectorEnv:
             if len(dimensions) != 1:
                 raise RuntimeError(f"environment workers disagree on dimensions: {sorted(dimensions)}")
             self.observation_dim, self.action_dim, self.team_size = dimensions.pop()
+            self.current_alive_masks = np.ones((num_envs, self.team_size), dtype=np.float32)
             self.current_observations = np.zeros(
                 (num_envs, self.team_size, self.observation_dim), dtype=np.float32
             )

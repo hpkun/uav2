@@ -36,12 +36,12 @@ def test_factory_and_reset_contract():
     assert observation.shape == (4, 52) and env.action_dim == 3
     assert len(env.red) == len(env.blue) == 4
     assert env.red_alive_mask.sum() == env.blue_alive_mask.sum() == 4
-    assert info['environment_variant'] == 'single_round_v1'
+    assert info['environment_variant'] == 'single_round_v2'
     assert env.max_steps == 1000
     assert isinstance(env.fixed_policy, GroundAwareNearestTargetPursuitPolicy)
 
 
-@pytest.mark.parametrize('variant', ['persistent_wave_v1', 'persistent_wave_v2', 'direct_v2_3', None, 'unknown'])
+@pytest.mark.parametrize('variant', ['single_round_v1', 'single_round_6v6_v1', 'persistent_wave_v1', 'persistent_wave_v2', 'direct_v2_3', None, 'unknown'])
 def test_factory_and_constructor_fail_closed(variant):
     cfg = config()
     if variant is None:
@@ -170,7 +170,7 @@ def test_best_selection_priority():
     assert key(.5, 10, 1) > key(.5, 10, 2)
 
 
-@pytest.mark.parametrize('variant', ['persistent_wave_v1', 'persistent_wave_v2', 'direct_v2_3', None])
+@pytest.mark.parametrize('variant', ['single_round_v1', 'single_round_6v6_v1', 'persistent_wave_v1', 'persistent_wave_v2', 'direct_v2_3', None])
 def test_old_checkpoint_resume_and_evaluation_rejected(tmp_path, variant):
     cfg, algorithm = config(), load('mappo.yaml')
     runner = MAPPOTrainingRunner(cfg, algorithm, num_envs=1, total_sampled_steps=4,

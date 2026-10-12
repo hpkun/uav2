@@ -121,7 +121,9 @@ def test_cli_rejects_missing_checkpoint_metadata_with_valid_snapshots(checkpoint
     (tmp_path / 'run_config.json').write_text(json.dumps(dict(seed=0, num_envs=1,
         total_sampled_steps=4, device='cuda', smoke=True)))
     result = subprocess.run([sys.executable, str(ROOT / 'algorithm/train_mappo.py'),
-        '--resume', str(path), '--total-sampled-steps', '8'], cwd=ROOT,
+        '--resume', str(path), '--total-sampled-steps', '8',
+        '--env-config', 'configs/single_round_environment.yaml',
+        '--algorithm-config', 'configs/mappo.yaml'], cwd=ROOT,
         capture_output=True, text=True, timeout=60)
     assert result.returncode != 0 and 'training_gamma' in result.stderr
     assert not (tmp_path / 'training_metrics.jsonl').exists()
@@ -190,13 +192,18 @@ def test_committed_clean_clone_audit_is_repeatable_and_ignores_staged_changes(tm
     subprocess.run(['git', 'clone', '--shared', str(ROOT), str(clone)], check=True,
                    capture_output=True, timeout=60)
     # Commit only inside this disposable clone to simulate this patch after commit.
-    for folder in ('algorithm', 'env', 'tests', 'tools'):
-        for path in (ROOT / folder).rglob('*.py'):
+    for folder in ('algorithm', 'env', 'tests', 'tools', 'configs', 'legacy'):
+        for path in (ROOT / folder).rglob('*' if folder == 'legacy' else '*.yaml' if folder == 'configs' else '*.py'):
+            if not path.is_file(): continue
             if '__pycache__' in path.parts: continue
             destination = clone / path.relative_to(ROOT)
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(path.read_bytes())
-    git('add', 'algorithm', 'env', 'tests', 'tools')
+    baseline = ROOT / 'reports/cadence_v2_baseline.json'
+    destination = clone / 'reports/cadence_v2_baseline.json'
+    destination.parent.mkdir(exist_ok=True)
+    destination.write_bytes(baseline.read_bytes())
+    git('add', 'algorithm', 'env', 'tests', 'tools', 'configs', 'legacy', 'reports/cadence_v2_baseline.json')
     git('-c', 'user.name=Protocol Test', '-c', 'user.email=protocol-test@example.invalid',
         'commit', '-m', 'Temporary protocol snapshot for reproducibility test')
     assert not git('status', '--porcelain').strip()

@@ -14,7 +14,7 @@ from env.geometry import engagement_geometry
 from env.observation import build_team_observations
 from env.reward import paper_state_reward_components
 from env.scenario import random_combat_states
-from env.weapon import FireState, WeaponEnvelope
+from env.weapon import WeaponEnvelope
 from env.integrator import RK4Integrator
 from env.models import AircraftSpec, AircraftState
 
@@ -234,19 +234,21 @@ def test_weapon_rng_reproducibility_and_angle_sign_symmetry():
     assert p_rate == pytest.approx(n_rate, abs=0.03)
 
 
-def test_entry_trigger_is_one_attempt_per_continuous_window_and_rearms():
-    env = MultiUAVCombatEnv(config())
-    env.reset(1)
-    attackers = one_alive(state())
-    targets = one_alive(state(x=1000.0))
-    fire_states = [FireState() for _ in range(4)]
-    counts = [len(env._entry_attempts(attackers, targets, fire_states, "red"))]
-    counts += [len(env._entry_attempts(attackers, targets, fire_states, "red")) for _ in range(99)]
-    assert sum(counts) == 1
+def test_continuous_window_uses_integer_cooldown_and_exit_cannot_rearm():
+    env = MultiUAVCombatEnv(config()); env.reset(1)
+    attackers, targets = one_alive(state()), one_alive(state(x=1000.0))
+    fired = []
+    for number in range(1, 101):
+        env.steps = number
+        if env._attack_attempts(attackers, targets, env.red_next_fire_step, "red"):
+            fired.append(number)
+    assert fired == list(range(1, 101, 10))
     targets[0].x = 5000.0
-    assert env._entry_attempts(attackers, targets, fire_states, "red") == []
+    assert not env._attack_attempts(attackers, targets, env.red_next_fire_step, "red")
     targets[0].x = 1000.0
-    assert len(env._entry_attempts(attackers, targets, fire_states, "red")) == 1
+    assert not env._attack_attempts(attackers, targets, env.red_next_fire_step, "red")
+    env.steps = 101
+    assert len(env._attack_attempts(attackers, targets, env.red_next_fire_step, "red")) == 1
 
 
 def test_random_diameter_scenario_contract_over_1000_resets():

@@ -1,11 +1,11 @@
-"""Single-round 4v4 combat with the frozen V2.3 battle foundations."""
+"""Single-round team combat with the V2.3 battle foundations."""
 from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 import numpy as np
 
-from .config import ENVIRONMENT_VERSION, aircraft_spec, load_config
+from .config import ENVIRONMENT_VERSION, aircraft_spec, load_config, attack_cooldown_steps
 from .dynamics import PointMassDynamics
 from .integrator import RK4Integrator
 from .models import AircraftState
@@ -15,7 +15,7 @@ from .geometry import engagement_geometry
 from .observation import OBSERVATION_DIM, build_team_observations, observation_dim_from_config
 from .reward import paper_state_reward_components
 from .scenario import random_combat_states
-from .weapon import FireState, WeaponEnvelope
+from .weapon import WeaponEnvelope
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -23,11 +23,11 @@ DEFAULT_COMBAT_CONFIG = PROJECT_ROOT / "configs/single_round_environment.yaml"
 
 
 class MultiUAVCombatEnv:
-    """Four learned Red UAVs versus deterministic nearest-target Blue UAVs."""
+    """Learned Red UAVs versus deterministic nearest-target Blue UAVs."""
 
     team_size, observation_dim, action_dim = 4, OBSERVATION_DIM, 3
     environment_version = ENVIRONMENT_VERSION
-    environment_variant = "single_round_v1"
+    environment_variant = "single_round_v2"
 
     def __init__(
         self, config: str | Path | dict[str, Any] = DEFAULT_COMBAT_CONFIG
@@ -35,15 +35,18 @@ class MultiUAVCombatEnv:
         self.config = load_config(config) if not isinstance(config, dict) else config
         if str(self.config.get("environment_version")) != ENVIRONMENT_VERSION:
             raise ValueError(f"environment_version must be {ENVIRONMENT_VERSION}")
-        if self.config.get("environment_variant") != "single_round_v1":
-            raise ValueError("environment_variant must be single_round_v1")
-        if int(self.config["scenario"]["team_size"]) != 4:
-            raise ValueError("single_round_v1 requires team_size=4")
+        self.environment_variant = self.config.get("environment_variant")
+        if self.environment_variant != "single_round_v2":
+            raise ValueError("environment_variant must be single_round_v2")
+        self.team_size = int(self.config["scenario"]["team_size"])
+        if self.team_size != 4:
+            raise ValueError("environment_variant/team_size mismatch")
         self.spec = aircraft_spec(self.config)
         self.observation_dim = observation_dim_from_config(self.config["observation"])
-        if self.observation_dim != 52:
-            raise ValueError("single_round_v1 requires observation_dim=52")
+        if self.observation_dim != 13 * self.team_size:
+            raise ValueError("single-round observation_dim/team_size mismatch")
         self.dt = float(self.config["simulation"]["dt"])
+        self.cooldown_steps = attack_cooldown_steps(self.config)
         self.max_steps = int(self.config["simulation"]["max_steps"])
         self.arena_radius = float(self.config["arena"]["radius"])
         self.dynamics = PointMassDynamics()
@@ -55,7 +58,8 @@ class MultiUAVCombatEnv:
             )
         elif policy_type == "ground_aware_nearest_target":
             self.fixed_policy = GroundAwareNearestTargetPursuitPolicy(
-                self.config["blue_policy"], self.config["action"], self.config["aircraft"]
+                self.config["blue_policy"], self.config["action"], self.config["aircraft"],
+                team_size=self.team_size,
             )
         else:
             raise ValueError(f"unsupported blue_policy.type: {policy_type!r}")
@@ -63,8 +67,8 @@ class MultiUAVCombatEnv:
         self.rng = np.random.default_rng()
         self.red: list[AircraftState] = []
         self.blue: list[AircraftState] = []
-        self.red_fire_states = [FireState() for _ in range(self.team_size)]
-        self.blue_fire_states = [FireState() for _ in range(self.team_size)]
+        self.red_next_fire_step = np.zeros(self.team_size, dtype=np.int64)
+        self.blue_next_fire_step = np.zeros(self.team_size, dtype=np.int64)
         self.red_last_executed_phi = np.zeros(self.team_size, dtype=np.float32)
         self.blue_last_executed_phi = np.zeros(self.team_size, dtype=np.float32)
         self.steps = 0
@@ -85,6 +89,7 @@ class MultiUAVCombatEnv:
         events = (
             "fire_window_steps", "fire_window_pair_steps", "fire_attempts",
             "weapon_hits", "attack_kills", "boundary_exits", "ground_losses",
+            "cooldown_blocked_agent_steps",
         )
         self.combat_counts = {
             side: {event: 0 for event in events} for side in ("red", "blue")
@@ -103,8 +108,8 @@ class MultiUAVCombatEnv:
         self.red, self.blue, radial_angle = random_combat_states(
             self.rng, **self.config["scenario"]
         )
-        self.red_fire_states = [FireState() for _ in range(self.team_size)]
-        self.blue_fire_states = [FireState() for _ in range(self.team_size)]
+        self.red_next_fire_step.fill(0)
+        self.blue_next_fire_step.fill(0)
         self.red_last_executed_phi.fill(0.0)
         self.blue_last_executed_phi.fill(0.0)
         self.steps = 0
@@ -131,8 +136,6 @@ class MultiUAVCombatEnv:
         return build_team_observations(
             self.red, self.blue, self.config["observation"],
             self.red_last_executed_phi,
-            np.asarray([state.armed for state in self.red_fire_states], dtype=np.float32)
-            if self.observation_dim > OBSERVATION_DIM else None,
         )
 
     @staticmethod
@@ -194,29 +197,28 @@ class MultiUAVCombatEnv:
         ]
         return min(candidates)[1] if candidates else None
 
-    def _entry_attempts(
+    def _attack_attempts(
         self,
         attackers: list[AircraftState],
         targets: list[AircraftState],
-        fire_states: list[FireState],
+        next_fire_step: np.ndarray,
         side: str,
     ) -> list[tuple[int, int, bool]]:
         attempts: list[tuple[int, int, bool]] = []
         for attacker_index, attacker in enumerate(attackers):
-            fire_state = fire_states[attacker_index]
             target_index = self._select_target(attacker, targets) if attacker.alive else None
             if target_index is None:
-                fire_state.armed = True
                 continue
-            if not fire_state.armed:
+            if self.steps < next_fire_step[attacker_index]:
+                self.combat_counts[side]["cooldown_blocked_agent_steps"] += 1
                 continue
-            fire_state.armed = False
             geometry = engagement_geometry(attacker, targets[target_index])
             attempts.append((
                 attacker_index,
                 target_index,
                 self.weapon.attempt_hit(geometry, self.rng),
             ))
+            next_fire_step[attacker_index] = self.steps + self.cooldown_steps
         attempt_count = len(attempts)
         hit_count = sum(hit for _, _, hit in attempts)
         self.combat_counts[side]["fire_attempts"] += attempt_count
@@ -358,6 +360,12 @@ class MultiUAVCombatEnv:
             info[f"episode_{name}_rewards"] = values.copy()
             info[f"episode_{name}_total"] = float(values.sum())
         info.update(self._blue_diagnostics())
+        info.update({
+            "red_step_cooldown_blocked": self._step_cooldown_blocked["red"],
+            "blue_step_cooldown_blocked": self._step_cooldown_blocked["blue"],
+            "red_next_fire_steps": self.red_next_fire_step.copy(),
+            "blue_next_fire_steps": self.blue_next_fire_step.copy(),
+        })
         return info
 
     def step(
@@ -369,14 +377,14 @@ class MultiUAVCombatEnv:
         if red_actions.shape != (self.team_size, self.action_dim) or not np.all(
             np.isfinite(red_actions)
         ):
-            raise ValueError("red_actions must be finite with shape (4, 3)")
+            raise ValueError(f"red_actions must be finite with shape ({self.team_size}, 3)")
         if blue_actions is None:
             blue_actions = self.fixed_policy.team_actions(self.blue, self.red)
         blue_actions = np.asarray(blue_actions, dtype=np.float32)
         if blue_actions.shape != (self.team_size, self.action_dim) or not np.all(
             np.isfinite(blue_actions)
         ):
-            raise ValueError("blue_actions must be finite with shape (4, 3)")
+            raise ValueError(f"blue_actions must be finite with shape ({self.team_size}, 3)")
 
         executed_red = np.clip(red_actions, -1.0, 1.0) * self.red_alive_mask[:, None]
         executed_blue = np.clip(blue_actions, -1.0, 1.0) * self.blue_alive_mask[:, None]
@@ -400,12 +408,17 @@ class MultiUAVCombatEnv:
         blue_hits_before = self.combat_counts["blue"]["weapon_hits"]
         red_kills_before = self.combat_counts["red"]["attack_kills"]
         blue_kills_before = self.combat_counts["blue"]["attack_kills"]
-        red_attempts = self._entry_attempts(
-            post_red, post_blue, self.red_fire_states, "red"
+        blocked_before = {side: self.combat_counts[side]["cooldown_blocked_agent_steps"]
+                          for side in ("red", "blue")}
+        red_attempts = self._attack_attempts(
+            post_red, post_blue, self.red_next_fire_step, "red"
         )
-        blue_attempts = self._entry_attempts(
-            post_blue, post_red, self.blue_fire_states, "blue"
+        blue_attempts = self._attack_attempts(
+            post_blue, post_red, self.blue_next_fire_step, "blue"
         )
+        self._step_cooldown_blocked = {
+            side: self.combat_counts[side]["cooldown_blocked_agent_steps"] - blocked_before[side]
+            for side in ("red", "blue")}
         red_kills, blue_kills = self._resolve_combat(red_attempts, blue_attempts)
         r1, r2 = self._event_reward_components(
             red_exits, red_ground, red_kills, blue_kills

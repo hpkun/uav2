@@ -15,9 +15,8 @@ def _checkpoint_extra(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def _environment_variant(config: dict[str, Any]) -> str:
-    if config.get("environment_variant") != "single_round_v1":
-        raise RuntimeError("formal environment_variant must be single_round_v1")
-    return "single_round_v1"
+    validate_single_round_environment_config(config)
+    return config["environment_variant"]
 
 
 def _configured_dimensions(
