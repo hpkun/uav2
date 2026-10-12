@@ -1,138 +1,166 @@
-# single_round_v3 / pursuit_v1 验收报告
+# single_round_v3 pre-training closure / pursuit_v2 验收
 
-日期：2026-10-12。冻结基线：`81d623e1ecafbf7df91aa2d9dc1fc19cf885f2a9`。
-本轮只实施 direct physical action、对应固定 Blue guidance、独立 pursuit curriculum，以及任务身份和 actor 初始化接口；未启动正式长训练。
+日期：2026-10-12。本轮基线：`e05130e4a20d81799762996f9ea14a61867c8339`。
+上一轮初始验收报告保留为 `reports/direct_control_v3_initial_acceptance.md`；旧 pursuit_v1 配置和环境快照在 `legacy/pursuit_v1`，按上述 Git commit 验证内容。
 
-## 版本、动作与执行路径
+## 本轮解决的问题
 
-正式 combat 为 `environment_version: '2.4'`、`environment_variant: single_round_v3`、`task_type: combat`、`action_semantics: direct_physical_control`。
-pursuit 为同一版本、`environment_variant: pursuit_v1`、`task_type: pursuit`、同一 action semantics。
-v2 配置及关键源码保存在 `legacy/single_round_v2`，快照内容逐一对照上述不可变 Git 基线；v2 不再是正式入口。
+pursuit_v1 的 alive UAV 持续接受负距离奖励，但穿地/出界后失活、后续奖励归零，GAE 又随 alive mask 截断；提前死亡可能提高 return。这是 early-death reward hacking。
+原 random raw T/L/beta 对手也会自己失活，移除有效目标；以米为 reward 的数值尺度过大；combat Blue ground guard 仅检查当前下俯，遗漏危险 commanded descent 的提前判断。
 
-Actor 动作维度仍为 `(4,3)`，依次是归一化 thrust、lift/normal overload、roll。
+本轮分别修复这些问题，没有重新设计 direct decoder 或物理 guidance 核心，没有启动正式长训练。
 
-| 归一化动作 | 物理量 | 范围 |
-| --- | --- | --- |
-| a_T | T = 2 a_T | [-2,2] |
-| a_L | L = 5 a_L | [-5,5] |
-| a_beta | beta = (pi/3) a_beta | [-pi/3,pi/3] rad |
+## pursuit_v2 精确定义
 
-解码先将输入 clip 到 [-1,1]，然后直接返回 `ControlCommand(nx=T,nz=L,phi=beta)`。
-正式 action 配置仅包含 mode 和三组物理范围，旧 command/controller 参数已退出正式配置。
-Red `_advance` 只调用 `normalized_action_to_direct_control`，继而原样调用 RK4/PointMassDynamics。
-没有 ManeuverTarget、时间常数、inverse dynamics、normal-load projection、平滑、执行器延迟或 L 偏置。
-旧 `action_to_target` / `target_to_control` / `action_to_control` 定义保持完整，历史控制器测试使用冻结 v2 配置。
+正式配置身份为 `environment_version: '2.4'`、`environment_variant: pursuit_v2`、`task_type: pursuit`、`action_semantics: direct_physical_control`。
+pursuit 是独立、无武器、固定 horizon 的 tracking curriculum。
 
-零动作产生 T=L=beta=0，并不 trim。在 theta=0、v=225 时：
-`dv/dt=0`，`dtheta/dt=-9.81/225=-0.0436 rad/s`，`dpsi/dt=0`。
-水平 trim 是物理 `[0,1,0]`，即归一化 `[0,0.2,0]`。
-端点、clip、非有限输入及解析导数测试使用严格绝对 tolerance；解析测试还覆盖正负 lift、roll、thrust 的方向。
+- 四个 Red 和四个 opponent 全程 alive=True，两个 alive mask 全程 `[1,1,1,1]`。
+- 穿地与出界只增加 diagnostics，不更改 state.alive，不抹除奖励，也不结束 episode。
+- step 1..999：terminated=False、truncated=False。
+- step 1000：terminated=False、truncated=True；之后必须 reset。
+- 只有非法输入、非法失活状态或非有限数值等程序错误才抛异常，不能静默转为死亡或零奖励。
 
-## 冻结范围
+1000 steps = 100 s，仍是 **project implementation choice**，不声称为论文原值。MAPPO trainer 未改，通过环境语义保证 GAE 不再因 pursuit 失活截断。
 
-`env/dynamics.py` 和 `env/integrator.py` 未写入修改。16 个冻结源码文件的 Git blob 与 v2 一致：
+### 唯一奖励与距离日志
 
-- env：dynamics、integrator、weapon、reward、observation、scenario、fixed_policy、models、geometry、math_utils。
-- algorithm：common/vector_env；MAPPO networks/trainer；MADSAC networks/trainer/evaluation。
+`reward[i] = -nearest_opponent_distance_m[i] * 0.001`，等于负距离公里数。例如 2000 m -> **-2.0**。
+配置明确写 `reward.distance_reward_scale: 0.001`；formal validator 严格拒绝其它 scale、其它 reward 字段及旧 pursuit_v1 身份。
+没有生存奖励、死亡惩罚、ground/boundary penalty、姿态/速度/控制努力/队形奖励，也没有其它 normalization。
 
-文件审计将 CRLF/LF 按 Git 文本规则规范化后比较 blob，且这些冻结文件无工作区 diff。
-额外 AST 比较确认 combat 的 `step`、`_attack_attempts`、`_resolve_combat`、`_resolve_noncombat_losses` 方法体与 v2 完全一致。
-正式配置除版本/variant/task/action identity、action 和 Blue guidance 外，不得变化；两个正式算法配置也与基线一致。
+每一步四个距离均 finite 且 >=0，四个 opponent 始终是有效 target。
+距离不再具有 dead-agent ->0 的分支；`nearest_distance_valid_mask` 始终四个 True。
+info 和 training JSONL 同时保存 `raw_nearest_distance_m` 与 `pursuit_reward`，逐项满足上述缩放等式；返回 reward 的 float32 仅是原训练接口数值类型。
 
-保留 v=150..300、theta=±pi/3、dt=.1、horizon=1000、arena=5000、4v4 对向初始化、52D 特征定义和全部 observation scales。
-已有 previous executed phi slot 现在自然记录实际 beta，未增维；专项测试核对 `(4,52)` 和实际执行值。
-战斗奖励仍为 R1+R2+R3+R4：kill +10、own loss -10、boundary -10、approach .001、advantage/threat tiers 原值。
-未添加任何飞行、控制努力或论文中的替代战斗奖励。
-weapon geometry、概率模型、4000 m range、1 s cooldown、next_fire_step、双方先尝试后同时结算全部保持。
-真实连续火窗 25 步实测 attempts `[1,11,21]`，3 次尝试、22 个 cooldown-blocked agent steps。
+### Violation diagnostics
 
-## Blue direct guidance 与地面保护
+分别记录 Red 和 opponent 的 ground/boundary：
 
-新 `DirectPursuitPolicy` 确定性选择最近 alive Red；同距以 index 决定，desired_speed 保持 250 m/s。
-速度请求为 `(250-v)/speed_response_time_seconds`，thrust 为 `sin(theta)+requested_acceleration/g`，clip 到 [-2,2]。
-heading/pitch error 除以对应 response time 得到请求角速度，并分别限幅。
-仅 Blue 反算：vertical = cos(theta)+v*pitch_rate/g；lateral = v*cos(theta)*heading_rate/g。
-beta 由 atan2(lateral,vertical) 得到并限幅；L 是该合法 beta 方向上的所需负载投影，再限幅到 [-5,5]。
-限幅时不保证精确实现原请求角速度，但始终输出合法物理动作。
-Blue 最终输出归一化 `[T/2,L/5,beta/(pi/3)]`，由与 Red 同一个 decoder 执行。
+- `*_violation_steps`：违反约束的累计 agent-step 数，after-integration altitude<=0 或 horizontal radius>arena.radius。
+- `*_violation_agents`：本 episode 至少违反一次的不同 aircraft 数，使用逐 aircraft OR mask 计数。
+- `*_violation_rate`：violation_steps / (4*elapsed_steps)。
 
-所有 guidance 参数都在 blue_policy：三个响应时间默认各 2 s，heading rate bound .3 rad/s、pitch rate bound .15 rad/s。
-gravity 直接复用 PointMassDynamics 的固定值；物理控制限制与正式 decoder 一致。
-旧类仅复用四槽诊断计数逻辑，旧 delta action 和 ground-risk/controller 实现均被覆盖，不执行。
+命名为 `red_ground_violation_*`、`red_boundary_violation_*`、`opponent_ground_violation_*`、`opponent_boundary_violation_*`。
+旧 ground_loss_count/boundary_loss_count 等死亡语义字段已移除。
+同一 aircraft 同一步同时穿地/出界时，两个诊断分别计数；均不改变 reward、alive 或 termination。
 
-地面保护用显式 `recovery_time_seconds=4`，对应旧 2*2 s 时间尺度。
-`downward=max(-v*sin(theta),0)`；超过 epsilon=1e-6 时，altitude/downward <=4 s 触发恢复。
-边界只使用一个 ULP 的向上容差处理三角函数/除法舍入。
-恢复将 beta=0、L=`recovery_lift=5`，T 继续保持合法。
-专项从 altitude=450 m、v=225、theta=-pi/6 开始运行 100 步：最低高度 **243.9659 m**，未撞地。
-另有最近 alive 目标、确定性、合法范围和 reset 诊断测试。该结果是简单俯冲专项，不代表所有极端状态均可救回。
+保留 mean/final/minimum nearest distance、mean speed、speed/pitch min/max hit ratios、mean_abs_T/L/beta 和三种 near-limit fractions。
+mean distance 使用四 agent 的全部 step 样本，final distance 为最终四-agent 距离均值；minimum 仅用于诊断。
+这些 metrics 进入 info、训练日志、求值和 summary，均不进入 reward。
 
-## 独立 pursuit 任务
+## 随机 waypoint opponent
 
-`PursuitEnv` 是单独环境类和配置，不在 combat 中切换 reward。
-只复用 integration/observation helper、同一 AircraftState/spec、direct decoder、52D foundation 和四-agent MAPPO 架构。
-不存在 weapon 对象、attack 配置、fire clock、攻击或 weapon kill 路径。
-初始位置在半径 3000 m 圆盘内随机，altitude 2000..4000 m、speed 200..250 m/s、pitch ±.1 rad、heading ±pi。
-对手每 20 步从显式配置的归一化 T/L/beta 区间采样一次并保持；只使用环境 episode RNG，可由 seed 完整复现。
-地面/边界损失仍使对应 UAV 失活；一方无 alive UAV 时结束，否则 1000 步截断。
-**1000 步 horizon 是 project implementation choice，不声称为论文原值。**
+新 policy 为 `seeded_random_waypoint_direct`。每架 opponent 独立维护 `[x,y,altitude]` waypoint 和 desired speed。
+所有采样只使用 pursuit episode RNG，同 seed 初始状态、完整 waypoint/speed 序列和完整轨迹逐值一致，不使用 global np.random。
 
-唯一奖励为 `r_i = -raw_nearest_distance_m[i] * distance_reward_scale`，默认 scale=1.0，无隐式归一化。
-距离针对最近 alive opponent；沿用既有 alive-mask 架构，失活 UAV 返回 0，并显式记录 validity mask，避免将其误读成零距离追踪成功。
-本轮没有增加存活奖励、坠机惩罚、速度/高度/姿态/队形奖励。
+| 参数 | 正式值及含义 |
+| --- | --- |
+| waypoint_interval_steps | 50；step index 0,50,...,950 各采样一次，每集 20 次 |
+| waypoint_radius_m | 2500；r=R*sqrt(U)、angle uniform，圆盘面积均匀 |
+| waypoint altitude | 2200..3800 m，uniform |
+| desired speed | 200..250 m/s，uniform |
+| speed/heading/pitch response time | 各 2 s，复用既有 direct guidance |
+| heading/pitch rate bounds | .3 / .15 rad/s |
+| ground recovery | 4 s；L=5、beta=0；epsilon=1e-6；考虑 commanded pitch |
+| opponent-only boundary safety | radius>=3000 m 时暂时朝 arena 中心引导，目标 altitude=3000 m、speed=200 m/s |
 
-info/training JSONL 记录逐 agent raw_nearest_distance_m、pursuit_reward、validity mask，以及：
+流程为 waypoint -> desired heading/elevation/speed -> 与 combat Blue 完全相同的 `action_toward` 物理 guidance -> normalized T/L/beta -> 同一个 direct decoder -> 原 PointMassDynamics/RK4。
+waypoint 50 步保持，但 normalized control 每步重新计算；无 teleport、直接 state 修改或第二套 dynamics。
+边界 safety 仅作用于 pursuit opponent，不改 arena radius、不影响 Red、不进入 reward，也不改变 combat Blue 最近 alive Red 的战术规则。
 
-- mean/final/minimum nearest distance；Red 与 opponent 的 ground/boundary loss count。
-- mean speed、speed min/max 与 pitch min/max 的 envelope hit ratio。
-- mean_abs_T/L/beta 与 fraction_abs_T/L/beta_near_limit，near-limit 阈值默认为物理限幅的 95%。
+### 100-seed safety 验证
 
-mean/min distance 使用有效 alive-agent 样本；final distance 使用各 agent 最后有效距离的平均，防止全灭后得到虚假的零距离。
-速度/控制统计对积分前 alive 的 Red 样本计数。全部 diagnostics 不影响 reward，专项对比不同 diagnostic threshold 的奖励逐项一致。
-pursuit 求值和 best selection 独立于 combat outcome：以 average team return 排序，不伪造 win/kill/R1-R4。
+`tools/validate_pursuit_waypoints.py` 对 seeds **0..99** 各完整执行 **1000 步**，Red 使用 normalized trim `[0,.2,0]`。
+实际执行 **100000 simulation steps / 400000 opponent agent-steps**，每一步检查 fixed horizon、全 alive mask 和 reward finite。
 
-## Checkpoint 与 actor-only 迁移
+| 结果 | 数值 |
+| --- | ---: |
+| opponent ground violation steps | **0** |
+| opponent boundary violation steps | **0** |
+| opponent ground violation agents | **0** |
+| opponent boundary violation agents | **0** |
+| 最低 opponent altitude | **2006.859888 m** |
+| 最大 opponent horizontal radius | **4236.601250 m**，arena radius 5000 m |
 
-MAPPO/MADSAC 新 checkpoint 均写入 version、variant、task_type、action_semantics；resume/evaluation 校验匹配及原有 config hash/runtime identity。
-v1/v2 的 2.3/delta-command 身份明确拒绝；正常 pursuit -> combat resume/evaluation 明确拒绝。
-MAPPO 新参数 `--init-actor-checkpoint` 仅适用于 fresh combat v3，和 resume 同时指定时在创建 run 前拒绝。
-source 必须为兼容 MAPPO implementation、2.4/pursuit_v1/pursuit/direct_physical_control、52/3/4，并匹配 actor 参数 key/shape，参数必须有限。
-加载只执行 actor.load_state_dict；未加载 critic、optimizer、sampled_steps、update counters 或 evaluation/episode history。
-run_config 和后续 checkpoint 记录 source 完整路径、SHA-256、source task/action semantics、actor_only 标记。
-64-hidden smoke actor 与 256-hidden 正式 actor 因架构不同不能互载；本轮保留原正式网络/训练器和超参数。
+全部 100 集无对手穿地/出界，不通过失活、重置、teleport 或截断掩盖违规。
+逐 seed 证据保留在 `outputs/pursuit_v2_waypoint_validation.json`，进度和最终结果在 `reports/pursuit_v2_waypoint_validation.txt`。
+这是规定的 100-seed 验证范围，不声称数学上覆盖所有可能种子。
 
-逐参数专项及 smoke 初始化前验证：source actor 精确复制，destination critic 完全不变，两个 optimizer state 为空、sampled_steps=0、evaluation history 为空。
-MADSAC 仍为正式 combat baseline；本轮 pursuit 和初始化接口使用 MAPPO。
+## Best checkpoint selection
 
-## 验证结果
+pursuit 正式 selection key 为 `(-mean_nearest_distance, -final_nearest_distance)`：mean 越小越好，仅完全相等时比较 final。
+不以 average_return 或 minimum_nearest_distance 主导 best_eval.pt。average_return 和 average_agent_return 仍保留。
+专项构造 return 更高但 mean distance 更差的 A，以及 return 更低但 mean 更好的 B，确认选择 B；另验证 final tie-break。
+combat selection 完全不改：win rate、average return、fewer Red losses。
 
-WSL 查询返回 E_ACCESSDENIED，因此按照 runtime fallback 使用 PowerShell Windows uav Conda 环境。
-Python：`D:\conda_envs\envs_dirs\uav\python.exe`；CUDA GPU：NVIDIA GeForce RTX 5060 Laptop GPU。
+## Combat Blue commanded-descent guard
 
-- 完整 pytest：**458 passed in 35.77s**。保留原 420 项回归，新增 38 项 direct/pursuit/迁移测试；历史 controller 测试改读 v2 快照。
-- 解析 decoder/dynamics、Blue guidance/recovery、cadence、checkpoint incompatibility、正常 pursuit 同任务 resume、缺失 action/task identity、CLI init/resume 冲突检查通过。
-- 结构审计：16 frozen files、4 frozen combat methods、Red legacy-controller 排除、配置冻结、435 个历史 archive 和 9 个 v1/6v6 snapshot 检查通过；v2 快照逐项验证。
-- clean-clone 测试检验当前**已提交 HEAD**，不复制本轮未提交 patch、不创建临时 commit；本轮工作区实现由 full tests 和工作区审计验证。
+`ground_risk(own,commanded_pitch)` 恢复：
+downward_current=max(-v*sin(current_theta),0)，downward_commanded=max(-v*sin(commanded_pitch),0)，downward=max(两者)。
+downward<=epsilon 时无风险，否则以 altitude/downward<=4 s 判断；保留一个 ULP 的阈值舍入容差。
+nearest alive Red 的 desired pitch 在危险下俯执行前参与判断，风险时 beta=0、L=recovery_lift=5，T 保持原 speed guidance 的合法范围。
 
-| CUDA smoke | transitions | PPO updates | completed training episodes | checkpoint evaluation |
+专项覆盖 current descent、当前 theta=0 的 commanded descent anticipation、time-to-ground>4 s 的安全下俯、climb 不额外触发、原俯冲恢复场景；全部通过。
+Blue `action_toward` 方法体与上轮 commit 的 AST 完全一致，仅 ground-risk/调用点及身份校验改变。
+
+combat variant 保持 single_round_v3，新增 mandatory `blue_policy.ground_avoidance.consider_commanded_pitch: true`。
+**v3 combat config fingerprint changed because commanded-descent ground guard semantics were corrected before formal training.**
+原 SHA：`d89661900b71f281963d343cd1989d84da6ddc16d7cfcf11df1bf1bf33f3450c`。
+新 SHA：`74dd228a741d6c1cfa974e015e3fd00a40ec945729da27c2066146314d184f58`。
+审计确认 combat config 相比上轮仅新增此字段；无需升级 v4，旧 v3 checkpoint 不允许静默兼容。
+
+## 冻结与 checkpoint identity
+
+T=2*a_T、L=5*a_L、beta=pi/3*a_beta 的 decoder 文件与上轮 Git blob 完全一致。
+16 个既有冻结源码与 v2 基线一致；combat step、attack attempts、simultaneous resolution 和 noncombat losses 的四个方法体保持一致。
+PointMassDynamics、RK4、v=150..300、pitch=±pi/3、dt=.1、combat 4v4 初始化、52D 特征、4000 m weapon/hit model、R1–R4 均未修改。
+1 s cooldown 实测 cadence 仍 `[1,11,21]`。MAPPO/MADSAC networks、trainers 和正式配置/超参数未改，MADSAC 代码本轮无修改。
+
+新的 actor initialization 只接受 2.4/pursuit_v2/pursuit/direct_physical_control、52/3/4 和匹配 actor architecture；只加载 actor，不继承 critic/optimizer/counters/history。
+正常 pursuit resume/evaluation 要求 pursuit_v2 identity 和精确 config hash。
+
+使用实际上一轮 checkpoint 验证：
+
+- `outputs/direct_control_acceptance/pursuit/latest.pt`：normal resume、evaluation、combat actor initialization 均因 pursuit_v1 variant 被拒绝。
+- `outputs/direct_control_acceptance/combat/latest.pt`：resume 和 evaluation 均因旧 environment_config_sha256 被拒绝。
+- v2 delta-controller/version 身份仍被拒绝；缺失或 false/non-boolean commanded-pitch flag 被 formal validator/环境拒绝。
+
+这些实际拒绝原因记录在新 smoke evidence，而非通过修改旧 checkpoint 伪造迁移。
+
+## 最终验证与 CUDA smoke
+
+WSL 查询仍返回 E_ACCESSDENIED，按 AGENTS fallback 使用 Windows PowerShell uav 环境：`D:\conda_envs\envs_dirs\uav\python.exe`。
+CUDA：NVIDIA GeForce RTX 5060 Laptop GPU；没有 CPU training/checkpoint fallback。
+
+- Full pytest：**479 passed in 43.21s**。
+- 新收口专项：**21 passed in 7.59s**，含 full-horizon 穿地/出界后持续负奖励、双方 alive mask、scale=-2.0、scale 拒绝、完整 1000 步同 seed 轨迹、waypoint 50-step 更新、无 teleport、best selection、guard 五类覆盖及 incompatibility。
+- 100 seeds × 1000 steps：passed，对手所有 violation 为 0。
+- cadence 与结构审计：passed；静态 AST parse 和 git diff --check passed。
+
+| CUDA smoke | transitions | PPO updates | 完整训练 episodes | checkpoint CUDA evaluation |
 | --- | ---: | ---: | ---: | --- |
 | combat v3 | 1200 | 19 | 9 | passed |
-| pursuit v1 | 1200 | 19 | 4 | passed |
-| pursuit actor -> fresh combat | 1200 | 19 | 9 | passed |
+| pursuit_v2 | 1200 | 19 | 1，**episode length=1000** | passed，求值 length=1000 |
+| pursuit_v2 actor -> fresh combat v3 | 1200 | 19 | 8 | passed |
 
-以上均使用既有 smoke 架构 hidden=64、2 PPO epochs；smoke tool 将 rollout 调为 64 提高验收速度。正式配置完全未改。
-每组均有有限 optimization metrics、唯一 reset seeds、实际 checkpoint 保存及 CUDA 严格求值。
-actor 初始化 smoke 初次验证断言因 CPU/CUDA tensor 比较报错，修正验证断言的设备对齐后仅补跑该组；最终 evidence 全部通过。
-1200-transition smoke 用于协议/数值通路验证，不代表已学会追踪或战斗。pursuit 留出求值仍有 2 ground losses 和 2 boundary losses，没有隐藏这些诊断或将其加入 reward。
+沿用 smoke hidden=64、2 PPO epochs、tool rollout=64，正式 architecture/hyperparameters 完全未改。
+三组 optimization metrics 均有限，保存 checkpoint、唯一 reset seeds 及完整求值证据。
+actor 初始化前逐参数确认 actor exact copy、critic unchanged、optimizer state empty、sampled_steps=0、evaluation history empty。
 
-证据文件：`reports/v3_pytest_final.txt`、`reports/v3_cuda_smoke.txt`、`outputs/direct_control_acceptance/evidence.json`、`outputs/direct_control_audit/single_round_audit.json`、`outputs/cadence_v3_validation/cadence.json`。
-每组 latest.pt、env_config.yaml、algorithm_config.yaml、training/optimization_metrics 和 run_summary 留在对应 smoke 输出目录。
+pursuit 留出 smoke 中 Red 仍有 3161 ground violation agent-steps、3001 boundary violation agent-steps，分别占 0.79025 / 0.75025；四 Red 都曾违规。
+这些违规没有死亡、奖励抹零或提前结束；opponent 两类 violation 为 0，episode length 始终 1000。
+smoke 是协议/数值通路验收，不代表 1200 transitions 已学会稳定追踪或安全飞行。
+
+新证据路径：`reports/pursuit_v2_pytest_final.txt`、`reports/pursuit_v2_special_tests.txt`、`reports/pursuit_v2_cuda_smoke.txt`、`outputs/pursuit_v2_acceptance/evidence.json`、`outputs/pursuit_v2_audit/single_round_audit.json`、`outputs/cadence_v3_validation/cadence.json`。
+clean-clone 测试仍只检验已提交 HEAD，不复制未提交 patch、不创建临时 commit；本轮工作区实现由 full tests 和 working-tree audit 验证。
 
 ## 修改文件清单
 
-- 配置/环境：configs/single_round_environment.yaml；新增 configs/pursuit_environment.yaml；env/config.py、control.py、combat_env.py、factory.py；新增 direct_protocol.py、direct_policy.py、pursuit_env.py。
-- 协议/训练求值：algorithm/common/protocol.py、checkpoint.py、evaluator.py；新增 pursuit_metrics.py；algorithm/mappo/runner.py、evaluation.py；新增 actor_initialization.py；algorithm/train_mappo.py；新增 train_pursuit.py；algorithm/madsac/protocol.py、runner.py。
-- 验证：tools/audit_single_round.py、validate_attack_cadence.py、smoke_single_round.py；新增 smoke_direct_control.py；tests/test_combat_environment.py、test_fixed_four_runtime.py、test_single_round_protocol.py、test_training_protocol.py；新增 test_direct_control_v3.py。
-- 文档/历史：README.md、本报告、最终验证日志、legacy/single_round_v2 下 9 个 v2 源码/配置/审计报告快照及索引。
+- 配置：configs/pursuit_environment.yaml；configs/single_round_environment.yaml（仅 ground-guard flag）。
+- 环境：env/pursuit_env.py、direct_policy.py、factory.py；新增 waypoint_policy.py。
+- 协议/日志/选择：algorithm/common/protocol.py、pursuit_metrics.py；algorithm/mappo/runner.py、actor_initialization.py。
+- 验证：tests/test_direct_control_v3.py；新增 test_pursuit_v2_closure.py；tools/audit_single_round.py、smoke_direct_control.py；新增 validate_pursuit_waypoints.py。
+- 文档/历史：README.md、本报告、direct_control_v3_initial_acceptance.md、legacy/pursuit_v1 的旧配置和环境快照、四份新验证日志。
 
-未运行 500k、3M 或 pursuit 长训练；未提交、推送、创建分支或执行远程操作。正式训练命令等待用户确认后再提供。
+没有启动 pursuit long training、500k 或 3M；没有提交、推送、创建分支或远程操作。

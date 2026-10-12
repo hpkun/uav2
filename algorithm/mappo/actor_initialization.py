@@ -9,7 +9,7 @@ def validate_actor_initialization(state, target_config, actor=None):
     if target_config.get("task_type") != "combat" or target_config.get("environment_variant") != "single_round_v3":
         raise RuntimeError("actor initialization is for fresh combat v3 only")
     extra = state.get("extra", {})
-    expected = {"environment_version":"2.4", "environment_variant":"pursuit_v1",
+    expected = {"environment_version":"2.4", "environment_variant":"pursuit_v2",
                 "task_type":"pursuit", "action_semantics":"direct_physical_control",
                 "observation_dim":52, "action_dim":3, "num_agents":4}
     if state.get("algorithm") != "MAPPO" or state.get("mappo_impl_version") != MAPPO_IMPL_VERSION:

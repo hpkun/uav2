@@ -23,6 +23,7 @@ BASE_COMMIT = '8d09df1fd1e6d2425b712d0c336e9525cd313c4c'
 PRE_CADENCE_COMMIT = '89fd4c54d07205bd0952eb972cf133b4a41349f7'
 ARCHIVE_SNAPSHOT_COMMIT = 'b80337fd7aad8a37865f10e3f2cb6451d2775b96'
 V2_COMMIT = '81d623e1ecafbf7df91aa2d9dc1fc19cf885f2a9'
+V3_CLOSURE_BASELINE = 'e05130e4a20d81799762996f9ea14a61867c8339'
 FROZEN_FILES = tuple(f'env/{name}.py' for name in (
     'dynamics', 'integrator', 'weapon', 'reward', 'observation',
     'scenario', 'fixed_policy', 'models', 'geometry', 'math_utils')) + (
@@ -82,7 +83,11 @@ def verify_archives(root):
         relative = path.relative_to(root / 'legacy').as_posix()
         if relative in ('README.md', 'single_round_v2/README.md'): continue  # Authored archive indexes.
         archived = path.relative_to(root).as_posix()
-        if relative.startswith('single_round_v2/'):
+        if relative.startswith('pursuit_v1/'):
+            original = relative[len('pursuit_v1/'):]
+            expected = baseline_blobs(root,V3_CLOSURE_BASELINE)[original]
+            source = V3_CLOSURE_BASELINE
+        elif relative.startswith('single_round_v2/'):
             original = relative[len('single_round_v2/'):]
             expected = baseline_blobs(root, V2_COMMIT)[original]
             source = V2_COMMIT
@@ -125,6 +130,16 @@ def exact_config_delta(root):
 
 
 def direct_path_audit(root):
+    closure_blobs = baseline_blobs(root,V3_CLOSURE_BASELINE)
+    require(blob_hash(root/'env/control.py') == closure_blobs['env/control.py'], 'direct decoder changed since v3 acceptance')
+    old_config = yaml.safe_load(baseline_content(root,'configs/single_round_environment.yaml',V3_CLOSURE_BASELINE))
+    new_config = yaml.safe_load((root/'configs/single_round_environment.yaml').read_text(encoding='utf-8'))
+    old_config['blue_policy']['ground_avoidance']['consider_commanded_pitch'] = True
+    require(new_config == old_config, 'combat config changed beyond commanded-descent guard identity')
+    old_policy = ast.parse(baseline_content(root,'env/direct_policy.py',V3_CLOSURE_BASELINE).decode())
+    new_policy = ast.parse((root/'env/direct_policy.py').read_text(encoding='utf-8'))
+    find_guidance = lambda t: next(n for n in ast.walk(t) if isinstance(n,ast.FunctionDef) and n.name=='action_toward')
+    require(ast.dump(find_guidance(old_policy))==ast.dump(find_guidance(new_policy)), 'direct guidance core changed')
     current = ast.parse((root/'env/combat_env.py').read_text(encoding='utf-8'))
     previous = ast.parse(baseline_content(root, 'env/combat_env.py', V2_COMMIT).decode())
     methods = lambda tree: {n.name:n for n in ast.walk(tree) if isinstance(n,ast.FunctionDef)}

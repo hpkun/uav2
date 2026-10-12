@@ -339,7 +339,7 @@ class MAPPOTrainingRunner:
 
     def _evaluation_key(self, record: dict[str, float]) -> tuple[float, ...]:
         if self.env_config["task_type"] == "pursuit":
-            return (float(record["average_return"]),)
+            return (-float(record["mean_nearest_distance"]), -float(record["final_nearest_distance"]))
         return evaluation_selection_key(record)
 
     def _consider_best_evaluation(self, record: dict[str, float]) -> bool:

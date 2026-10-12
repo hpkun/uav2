@@ -1,0 +1,9 @@
+[START] algorithm=MAPPO | mode=smoke | device=cuda | obs=52 | act=3 | agents=4 | hidden=64 | critic=attention | heads=2 | envs=1 | workers=1 | backend=multiprocess_spawn | seed=0 | total=1200 | rollout=64 | epochs=2 | minibatch=32 | gamma=0.99 | lambda=0.95 | clip=0.2 | variant=single_round_v3 | max_steps=1000
+[EVAL] steps=1200 | return=-39.64 | agent_return=-9.91 | win=0.00 | red_loss=4.00 | ep_len=118.0
+[SMOKE] combat: 1200 CUDA transitions; strict checkpoint evaluation passed
+[START] algorithm=MAPPO | mode=smoke | device=cuda | obs=52 | act=3 | agents=4 | hidden=64 | critic=attention | heads=2 | envs=1 | workers=1 | backend=multiprocess_spawn | seed=101 | total=1200 | rollout=64 | epochs=2 | minibatch=32 | gamma=0.99 | lambda=0.95 | clip=0.2 | variant=pursuit_v2 | max_steps=1000
+[EVAL] task=pursuit | return=-77341.19 | mean_distance_m=19335.30
+[SMOKE] pursuit: 1200 CUDA transitions; strict checkpoint evaluation passed
+[START] algorithm=MAPPO | mode=smoke | device=cuda | obs=52 | act=3 | agents=4 | hidden=64 | critic=attention | heads=2 | envs=1 | workers=1 | backend=multiprocess_spawn | seed=202 | total=1200 | rollout=64 | epochs=2 | minibatch=32 | gamma=0.99 | lambda=0.95 | clip=0.2 | variant=single_round_v3 | max_steps=1000
+[EVAL] steps=1200 | return=-29.67 | agent_return=-7.42 | win=0.00 | red_loss=4.00 | ep_len=113.0
+[SMOKE] initialized_combat: 1200 CUDA transitions; strict checkpoint evaluation passed

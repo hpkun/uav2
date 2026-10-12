@@ -2,7 +2,12 @@
 import numpy as np
 
 DIAGNOSTICS = ("mean_nearest_distance", "final_nearest_distance", "minimum_nearest_distance",
-    "ground_loss_count", "boundary_loss_count", "blue_ground_loss_count", "blue_boundary_loss_count",
+    "red_ground_violation_steps", "red_boundary_violation_steps",
+    "opponent_ground_violation_steps", "opponent_boundary_violation_steps",
+    "red_ground_violation_agents", "red_boundary_violation_agents",
+    "opponent_ground_violation_agents", "opponent_boundary_violation_agents",
+    "red_ground_violation_rate", "red_boundary_violation_rate",
+    "opponent_ground_violation_rate", "opponent_boundary_violation_rate",
     "mean_speed", "speed_min_hit_ratio", "speed_max_hit_ratio", "pitch_min_hit_ratio", "pitch_max_hit_ratio",
     "mean_abs_T", "mean_abs_L", "mean_abs_beta", "fraction_abs_T_near_limit",
     "fraction_abs_L_near_limit", "fraction_abs_beta_near_limit")

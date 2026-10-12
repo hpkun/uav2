@@ -7,12 +7,13 @@ from .models import AircraftState
 from .dynamics import PointMassDynamics
 from .integrator import RK4Integrator
 from .combat_env import MultiUAVCombatEnv
+from .waypoint_policy import SeededRandomWaypointDirectPolicy
 
 
 def validate_pursuit_config(config):
     validate_direct_action_config(config)
-    if (config.get("environment_version"), config.get("environment_variant"), config.get("task_type")) != ("2.4", "pursuit_v1", "pursuit"):
-        raise RuntimeError("pursuit requires 2.4/pursuit_v1/pursuit identity")
+    if (config.get("environment_version"), config.get("environment_variant"), config.get("task_type")) != ("2.4", "pursuit_v2", "pursuit"):
+        raise RuntimeError("pursuit requires 2.4/pursuit_v2/pursuit identity")
     if config["simulation"] != {"dt": .1, "max_steps": 1000} or config["scenario"]["team_size"] != 4:
         raise RuntimeError("pursuit requires 4 agents, dt=.1, project horizon=1000")
     from .observation import observation_dim_from_config
@@ -20,8 +21,8 @@ def validate_pursuit_config(config):
         raise RuntimeError("pursuit requires observation_dim=52")
     if any(key in config for key in ("weapon", "attack")):
         raise RuntimeError("pursuit must have no weapon or attack configuration")
-    if set(config["reward"]) != {"distance_reward_scale"} or not np.isfinite(config["reward"]["distance_reward_scale"]) or config["reward"]["distance_reward_scale"] <= 0:
-        raise RuntimeError("pursuit reward must be negative distance with explicit positive scale")
+    if config["reward"] != {"distance_reward_scale":0.001}:
+        raise RuntimeError("pursuit_v2 distance_reward_scale must be exactly 0.001")
     s = config["scenario"]
     if not 0 < s["initial_radius_m"] < config["arena"]["radius"] or not 0 < s["altitude_min_m"] <= s["altitude_max_m"]:
         raise ValueError("illegal pursuit initial position range")
@@ -29,28 +30,25 @@ def validate_pursuit_config(config):
     if not a["v_min"] <= s["speed_min_m_s"] <= s["speed_max_m_s"] <= a["v_max"] or not 0 <= s["pitch_abs_max_rad"] <= min(-a["theta_min"], a["theta_max"]):
         raise ValueError("illegal pursuit initial state envelope")
     p = config["opponent_policy"]
-    if p["type"] != "seeded_random_direct" or not isinstance(p["maneuver_interval_steps"], int) or p["maneuver_interval_steps"] <= 0:
-        raise ValueError("invalid random opponent maneuver interval")
-    for key in ("normalized_thrust_range", "normalized_lift_range", "normalized_roll_range"):
-        if not -1 <= p[key][0] <= p[key][1] <= 1:
-            raise ValueError("opponent control ranges must be normalized")
+    if p["type"] != "seeded_random_waypoint_direct" or type(p["waypoint_interval_steps"]) is not int or p["waypoint_interval_steps"] != 50:
+        raise ValueError("formal opponent requires seeded random waypoints every 50 steps")
+    if not 0 < p["waypoint_radius_m"] < p["boundary_avoidance"]["activation_radius_m"] < config["arena"]["radius"]:
+        raise ValueError("waypoint/safety radii must be inside the arena")
+    if not 0 < p["waypoint_altitude_min_m"] <= p["waypoint_altitude_max_m"]:
+        raise ValueError("invalid waypoint altitude range")
+    if not a["v_min"] <= p["desired_speed_min_m_s"] <= p["desired_speed_max_m_s"] <= a["v_max"]:
+        raise ValueError("invalid waypoint speed range")
+    if not a["v_min"] <= p["boundary_avoidance"]["desired_speed_m_s"] <= a["v_max"] or p["boundary_avoidance"]["recovery_altitude_m"] <= 0:
+        raise ValueError("invalid opponent safety guidance")
+    SeededRandomWaypointDirectPolicy(p)
     if not 0 < config["diagnostics"]["near_limit_fraction"] <= 1:
         raise ValueError("invalid diagnostic near-limit threshold")
-
-
-class SeededRandomDirectPolicy:
-    def __init__(self, config):
-        self.config = config
-
-    def team_actions(self, rng):
-        return np.stack([rng.uniform(*self.config[key], size=4) for key in
-                         ("normalized_thrust_range", "normalized_lift_range", "normalized_roll_range")], axis=1)
 
 
 class PursuitEnv:
     """Shares only integration and observation helpers with combat, never attacks."""
     team_size, observation_dim, action_dim = 4, 52, 3
-    environment_version, environment_variant = "2.4", "pursuit_v1"
+    environment_version, environment_variant = "2.4", "pursuit_v2"
     _advance = MultiUAVCombatEnv._advance
     _observations = MultiUAVCombatEnv._observations
     red_alive_mask = MultiUAVCombatEnv.red_alive_mask
@@ -63,7 +61,7 @@ class PursuitEnv:
         self.dt, self.max_steps = .1, 1000
         self.arena_radius = float(self.config["arena"]["radius"])
         self.dynamics, self.integrator = PointMassDynamics(), RK4Integrator(self.dt)
-        self.fixed_policy = SeededRandomDirectPolicy(self.config["opponent_policy"])
+        self.fixed_policy = SeededRandomWaypointDirectPolicy(self.config["opponent_policy"])
         self._episode_done = True
 
     def _initial_states(self):
@@ -89,16 +87,27 @@ class PursuitEnv:
         self.speed_sum, self.state_count = 0., 0
         self.control_sum, self.control_near = np.zeros(3), np.zeros(3)
         self.clamp_counts = np.zeros(4)
-        self.ground_loss_count, self.boundary_loss_count = 0, 0
-        self.blue_ground_loss_count, self.blue_boundary_loss_count = 0, 0
+        self.violation_steps = {f"{side}_{kind}_violation_steps":0
+            for side in ("red","opponent") for kind in ("ground","boundary")}
+        self.violation_masks = {key:np.zeros(4,dtype=bool) for key in self.violation_steps}
+        self.fixed_policy.reset()
         self.opponent_actions = np.zeros((4,3))
         self.last_valid_distances = self._distances()
         return self._observations(), self._info(self._distances(), np.zeros(4))
 
     def _distances(self):
-        targets = [s.as_array()[:3] for s in self.blue if s.alive]
-        return np.asarray([min(np.linalg.norm(s.as_array()[:3]-t) for t in targets)
-                           if s.alive and targets else 0. for s in self.red], dtype=float)
+        self._validate_states()
+        red = np.stack([s.as_array()[:3] for s in self.red])
+        blue = np.stack([s.as_array()[:3] for s in self.blue])
+        return np.linalg.norm(red[:,None,:]-blue[None,:,:],axis=2).min(axis=1)
+
+    def _validate_states(self):
+        if len(self.red)!=4 or len(self.blue)!=4:
+            raise RuntimeError("pursuit_v2 requires four Red and four opponents")
+        if not all(s.alive for s in self.red+self.blue):
+            raise RuntimeError("pursuit_v2 aircraft must stay alive; loss semantics forbidden")
+        if not all(np.isfinite(s.as_array()).all() for s in self.red+self.blue):
+            raise FloatingPointError("nonfinite pursuit aircraft state")
 
     def step(self, actions):
         if self._episode_done:
@@ -107,25 +116,19 @@ class PursuitEnv:
         if actions.shape != (4,3) or not np.isfinite(actions).all():
             raise ValueError("actions must be finite with shape (4,3)")
         actions = np.clip(actions, -1, 1)
+        self._validate_states()
         alive_before = self.red_alive_mask.astype(bool)
-        actions[~alive_before] = 0
-        if self.steps % self.fixed_policy.config["maneuver_interval_steps"] == 0:
-            self.opponent_actions = self.fixed_policy.team_actions(self.rng)
+        self.opponent_actions = self.fixed_policy.team_actions(self.blue,self.rng,self.steps)
         self.red_last_executed_phi = self._advance(self.red, actions)
         self.blue_last_executed_phi = self._advance(self.blue, self.opponent_actions)
         self.steps += 1
-        for side, states in (("red", self.red), ("blue", self.blue)):
-            for state in states:
-                if state.alive:
-                    ground = state.altitude <= 0
-                    boundary = np.hypot(state.x,state.y) > self.arena_radius
-                    if ground or boundary:
-                        state.alive = False
-                        prefix = "" if side == "red" else "blue_"
-                        field = prefix + ("ground_loss_count" if ground else "boundary_loss_count")
-                        setattr(self, field, getattr(self, field)+1)
+        for side, states in (("red", self.red), ("opponent", self.blue)):
+            for kind,mask in (("ground",np.array([s.altitude<=0 for s in states])),
+                              ("boundary",np.array([np.hypot(s.x,s.y)>self.arena_radius for s in states]))):
+                key = f"{side}_{kind}_violation_steps"
+                self.violation_steps[key] += int(mask.sum())
+                self.violation_masks[key] |= mask
         distances = self._distances()
-        # Dead UAVs receive zero under the existing alive-mask architecture.
         reward = -distances * self.config["reward"]["distance_reward_scale"]
         valid = self.red_alive_mask.astype(bool) & bool(self.blue_alive_mask.any())
         if valid.any():
@@ -141,15 +144,15 @@ class PursuitEnv:
                                   s.theta == self.spec.theta_min, s.theta == self.spec.theta_max]
             self.control_sum += np.abs(actions[index]) * [2,5,np.pi/3]
             self.control_near += np.abs(actions[index]) >= self.config["diagnostics"]["near_limit_fraction"]
-        terminated = not self.red_alive_mask.any() or not self.blue_alive_mask.any()
-        truncated = not terminated and self.steps >= self.max_steps
+        terminated = False
+        truncated = self.steps == self.max_steps
         self._episode_done = terminated or truncated
         return self._observations(), reward.astype(np.float32), bool(terminated), bool(truncated), self._info(distances,reward)
 
     def _info(self, distances, reward):
         mask = self.red_alive_mask.astype(bool) & bool(self.blue_alive_mask.any())
         count = max(self.state_count,1)
-        return {"environment_version":"2.4", "environment_variant":"pursuit_v1",
+        return {"environment_version":"2.4", "environment_variant":"pursuit_v2",
             "task_type":"pursuit", "action_semantics":"direct_physical_control",
             "episode_length":self.steps, "red_alive_mask":self.red_alive_mask,
             "blue_alive_mask":self.blue_alive_mask, "raw_nearest_distance_m":distances.copy(),
@@ -157,8 +160,9 @@ class PursuitEnv:
             "mean_nearest_distance":self.distance_sum/max(self.distance_count,1),
             "final_nearest_distance":float(self.last_valid_distances.mean()),
             "minimum_nearest_distance":self.distance_min if self.distance_count else 0.,
-            "ground_loss_count":self.ground_loss_count, "boundary_loss_count":self.boundary_loss_count,
-            "blue_ground_loss_count":self.blue_ground_loss_count, "blue_boundary_loss_count":self.blue_boundary_loss_count,
+            **self.violation_steps,
+            **{key.replace("_steps","_agents"):int(mask.sum()) for key,mask in self.violation_masks.items()},
+            **{key.replace("_steps","_rate"):value/max(4*self.steps,1) for key,value in self.violation_steps.items()},
             "mean_speed":self.speed_sum/count,
             **{name:float(value/count) for name,value in zip(
                 ("speed_min_hit_ratio","speed_max_hit_ratio","pitch_min_hit_ratio","pitch_max_hit_ratio"),self.clamp_counts)},

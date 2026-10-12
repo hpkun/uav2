@@ -23,6 +23,8 @@ def validate_single_round_environment_config(env_config: dict[str, Any]) -> None
         return
     if env_config.get("task_type") != "combat":
         raise RuntimeError("formal task_type must be combat or pursuit")
+    if env_config.get("blue_policy", {}).get("ground_avoidance", {}).get("consider_commanded_pitch") is not True:
+        raise RuntimeError("formal combat ground_avoidance.consider_commanded_pitch must be true")
     for section in ("simulation", "scenario", "observation", "action", "attack"):
         if not isinstance(env_config.get(section), dict):
             raise RuntimeError(f"formal single-round configuration missing section: {section}")

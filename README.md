@@ -25,35 +25,48 @@ Response times under `blue_policy` describe speed acceleration and heading/pitch
 error responses (seconds); rate bounds are rad/s. Only Blue inverts requested
 angular rates to physical lift/roll, clips to physical limits, and emits the same
 normalized physical action decoded for Red. Ground protection explicitly uses
-time-to-ground <=4 s, forces beta=0 and L=5, and keeps thrust legal. This matches
+time-to-ground <=4 s using the larger of current and commanded downward speeds,
+forces beta=0 and L=5, and keeps thrust legal. This matches
 the previous guard's 2*2 s time scale. A one-ULP tolerance handles threshold rounding.
+`consider_commanded_pitch: true` is mandatory. Combat remains v3, but its config
+fingerprint changed before formal training; old v3 smoke checkpoints are rejected.
 
-`configs/pursuit_environment.yaml` defines the independent `pursuit_v1` task.
+`configs/pursuit_environment.yaml` defines the independent `pursuit_v2` task.
 `algorithm/train_pursuit.py` uses the unchanged MAPPO network/PPO trainer.
 It shares direct controls, integration and the 52D observation builder, has
-random legal initial positions and seeded random opponent controls held for
-20 steps, and has no weapon or attack configuration/object/path.
-Reward is exclusively `-nearest_distance_m * distance_reward_scale`, default 1.0.
-Dead-agent rewards are zero under the existing alive-mask architecture; raw
-distance validity masks are logged explicitly. The 1000-step horizon is a
+random legal initial positions and independent seeded random waypoints sampled
+every 50 steps. Opponents share Blue's direct guidance toward these waypoints;
+they do not teleport. Waypoints are area-uniform in a 2500 m disk, altitude
+2200..3800 m, with target speed 200..250 m/s. Opponent-only boundary guidance
+aims at the arena center at radius >=3000 m, altitude 3000 m and speed 200 m/s.
+The task has no weapon or attack configuration/object/path.
+Reward is exclusively `-nearest_distance_m * 0.001`, the negative distance in km.
+The validator requires exactly `distance_reward_scale: 0.001`. All eight UAVs
+remain alive, all masks stay one, and all Red receive real distance rewards
+on every step. Ground/boundary crossings are diagnostics only. Terminated is
+always false; truncated is true exactly at step 1000. The 1000-step horizon is a
 **project implementation choice**, not a reported paper horizon.
 
 Pursuit logs raw per-agent distance/reward, mean/final/minimum nearest distance,
-ground/boundary losses, mean speed, speed/pitch envelope hit ratios, mean absolute
+ground/boundary violation agent-steps, distinct violating agents and rates for
+Red/opponents, mean speed, speed/pitch envelope hit ratios, mean absolute
 T/L/beta and near-limit fractions. Near-limit means >=95% of the physical limit.
-Distance means/minima use valid alive-agent samples; final distance uses each
-agent's last valid distance, avoiding a zero-distance artifact after elimination.
+Distance means/minima use all four agents at every step; final distance is the
+four-agent mean at the final step. Violation rates divide agent-steps by 4*steps.
 State/control diagnostics sample Red UAVs alive before each integration step.
-These diagnostics never enter reward. Pursuit checkpoint selection maximizes
-mean team return; combat keeps win rate, return, then fewer Red losses.
+These diagnostics never enter reward. Pursuit checkpoint selection minimizes
+mean nearest distance, then final nearest distance; return and minimum distance
+do not select best. Combat keeps win rate, return, then fewer Red losses.
 
 MAPPO supports `--init-actor-checkpoint` for **fresh combat v3 runs only**.
-It requires a pursuit checkpoint with version/task/action identity, 52/3/4
+It requires a pursuit_v2 checkpoint with version/task/action identity, 52/3/4
 dimensions and exactly compatible actor tensor keys/shapes. It loads only actor
 parameters and records source path/SHA-256/task/action semantics. Critic,
 optimizers, counters and history stay fresh. It cannot be combined with resume.
 Normal resume/evaluation require exact task/config hashes and direct-control
-identity. Smoke actors use hidden=64; formal actors use the unchanged hidden=256,
+identity. Flawed pursuit_v1 checkpoints are rejected for resume, evaluation and
+actor initialization; snapshots are retained under legacy/pursuit_v1.
+Smoke actors use hidden=64; formal actors use the unchanged hidden=256,
 so smoke and formal actors cannot initialize one another.
 
 Runtime policy: use WSL Ubuntu with `conda activate uav`; if WSL is unavailable,
@@ -63,6 +76,8 @@ static checks also run in uav. Validation tools are `tools/audit_single_round.py
 `tools/validate_attack_cadence.py`, and `tools/smoke_direct_control.py`.
 The latter caps each of combat, pursuit and actor-initialized combat at 1200
 environment transitions and refuses nonempty output directories.
+`tools/validate_pursuit_waypoints.py` runs 100 seeds with 1000 steps each, using
+Red trim actions, and requires zero opponent ground/boundary violations.
 
 The audit compares 16 frozen sources against immutable v2 Git blobs, checks
 frozen combat method ASTs and preserved legacy controller definitions, scans

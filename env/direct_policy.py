@@ -22,10 +22,14 @@ class DirectPursuitPolicy(GroundAwareNearestTargetPursuitPolicy):
             raise ValueError("downward_speed_epsilon must be finite and nonnegative")
         if config["desired_speed"] != 250:
             raise ValueError("Blue desired_speed must remain 250 m/s")
+        if config["ground_avoidance"].get("consider_commanded_pitch") is not True:
+            raise ValueError("ground_avoidance.consider_commanded_pitch must be true")
         self.reset_diagnostics()
 
-    def ground_risk(self, own):
-        downward = max(-own.v * np.sin(own.theta), 0.0)
+    def ground_risk(self, own, commanded_pitch):
+        downward_current = max(-own.v * np.sin(own.theta), 0.0)
+        downward_commanded = max(-own.v * np.sin(commanded_pitch), 0.0)
+        downward = max(downward_current, downward_commanded)
         if downward <= self.downward_speed_epsilon:
             return False, None
         time = own.altitude / downward
@@ -58,7 +62,7 @@ class DirectPursuitPolicy(GroundAwareNearestTargetPursuitPolicy):
             heading = np.arctan2(dy, dx)
             pitch = np.arctan2(own.z-target.z, np.hypot(dx, dy))
         action = self.action_toward(own, heading, pitch, self.config["desired_speed"])
-        override, _ = self.ground_risk(own)
+        override, _ = self.ground_risk(own, pitch)
         if override:
             action[1] = self.config["ground_avoidance"]["recovery_lift"] / 5.0
             action[2] = 0.0

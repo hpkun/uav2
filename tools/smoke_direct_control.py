@@ -6,20 +6,40 @@ import torch
 import yaml
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
 from algorithm.mappo.runner import MAPPOTrainingRunner
-from algorithm.mappo.actor_initialization import initialize_actor
+from algorithm.mappo.actor_initialization import initialize_actor,validate_actor_initialization
 from algorithm.mappo.evaluation import evaluate_mappo_checkpoint
-from algorithm.common.checkpoint import validate_checkpoint_for_evaluation
+from algorithm.common.checkpoint import validate_checkpoint_for_evaluation,validate_checkpoint_for_resume
 
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('--output-dir',type=Path,default=ROOT/'outputs/direct_control_acceptance')
+    parser.add_argument('--output-dir',type=Path,default=ROOT/'outputs/pursuit_v2_acceptance')
     parser.add_argument('--init-only',action='store_true')
     args=parser.parse_args()
     root=args.output_dir
     if not torch.cuda.is_available():raise RuntimeError('CUDA mandatory; no fallback')
     evidence=json.loads((root/'evidence.json').read_text()) if args.init_only else {'cuda_device':torch.cuda.get_device_name(0)}
     algo=yaml.safe_load((ROOT/'configs/mappo.yaml').read_text())
+    if not args.init_only:
+        evidence['old_checkpoint_incompatibility']={}
+        combat_cfg=yaml.safe_load((ROOT/'configs/single_round_environment.yaml').read_text())
+        pursuit_cfg=yaml.safe_load((ROOT/'configs/pursuit_environment.yaml').read_text())
+        for old_name,cfg in (('combat',combat_cfg),('pursuit',pursuit_cfg)):
+            path=ROOT/'outputs/direct_control_acceptance'/old_name/'latest.pt'
+            if not path.exists():
+                evidence['old_checkpoint_incompatibility'][old_name]={'available':False}
+                continue
+            old_state=torch.load(path,map_location='cpu',weights_only=False)
+            rejected={}
+            for label,check in (('evaluation',validate_checkpoint_for_evaluation),('resume',validate_checkpoint_for_resume)):
+                try:check(old_state,cfg,algo)
+                except RuntimeError as error:rejected[label]=str(error)
+                else:raise AssertionError(f'old {old_name} checkpoint accepted')
+            if old_name=='pursuit':
+                try:validate_actor_initialization(old_state,combat_cfg)
+                except RuntimeError as error:rejected['actor_initialization']=str(error)
+                else:raise AssertionError('pursuit_v1 actor accepted')
+            evidence['old_checkpoint_incompatibility'][old_name]={'available':True,'checkpoint':str(path),**rejected}
     source=root/'pursuit/latest.pt' if args.init_only else None
     tasks=(('initialized_combat',False,202),) if args.init_only else (('combat',False,0),('pursuit',True,101),('initialized_combat',False,202))
     for name,pursuit,seed in tasks:
@@ -51,6 +71,9 @@ def main():
                 runner.vector.close();raise
         print(runner.start_log_line(),flush=True)
         summary=runner.run()
+        if pursuit:
+            assert len(runner.completed_records)==1 and runner.completed_records[0]['episode_length']==1000
+            assert summary['average_episode_length']==1000
         assert runner.trainer.sampled_steps==1200 and runner.trainer.ppo_update_count>0
         assert all(np.isfinite(v) for v in runner.last_metrics.values())
         checkpoint=output/'latest.pt'

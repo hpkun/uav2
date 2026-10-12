@@ -79,5 +79,6 @@ blue_policy:
     recovery_time_seconds: 4.0
     downward_speed_epsilon: 1.0e-06
     recovery_lift: 5.0
+    consider_commanded_pitch: true
 task_type: combat
 action_semantics: direct_physical_control

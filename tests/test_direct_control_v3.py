@@ -75,7 +75,7 @@ def test_blue_nearest_alive_target_deterministic_and_legal():
 def test_blue_recovery_explicit_four_seconds_prevents_simple_dive():
     cfg=config();p=DirectPursuitPolicy(cfg['blue_policy'])
     own=AircraftState(0,0,-450,225,-np.pi/6,0)
-    risk,time=p.ground_risk(own)
+    risk,time=p.ground_risk(own,own.theta)
     assert risk and time==pytest.approx(4.0,abs=1e-14)
     a=p.action(own,[AircraftState(1000,0,-20,225,0,0)])
     assert a[1]==1 and a[2]==0
@@ -91,35 +91,35 @@ def test_pursuit_seed_reward_and_no_weapons():
     cfg=config(True);a=make_combat_environment(cfg);b=make_combat_environment(deepcopy(cfg))
     np.testing.assert_array_equal(a.reset(37)[0],b.reset(37)[0])
     assert not hasattr(a,'weapon') and not hasattr(a,'red_next_fire_step')
-    first_maneuver=None
-    for step in range(25):
+    first_waypoints=None
+    for step in range(55):
         x=a.step(np.tile([0,.2,0],(4,1)));y=b.step(np.tile([0,.2,0],(4,1)))
         np.testing.assert_array_equal(x[0],y[0]);np.testing.assert_array_equal(x[1],y[1])
         info=x[4]
-        np.testing.assert_allclose(x[1],-info['raw_nearest_distance_m'],rtol=1e-7)
+        np.testing.assert_allclose(x[1],-info['raw_nearest_distance_m']*.001,rtol=1e-7)
         assert not any('kill' in k or 'fire' in k or k.startswith('r1') for k in info)
-        if step==0:first_maneuver=a.opponent_actions.copy()
-        if step<20:np.testing.assert_array_equal(a.opponent_actions,first_maneuver)
-        if step==20:assert not np.array_equal(a.opponent_actions,first_maneuver)
+        if step==0:first_waypoints=a.fixed_policy.waypoints.copy()
+        if step<50:np.testing.assert_array_equal(a.fixed_policy.waypoints,first_waypoints)
+        if step==50:assert not np.array_equal(a.fixed_policy.waypoints,first_waypoints)
     c=make_combat_environment(config(True));assert not np.array_equal(c.reset(38)[0],a._observations())
     assert info['mean_abs_L']==pytest.approx(1,rel=1e-7)
     assert info['fraction_abs_L_near_limit']==0
 
 def test_pursuit_explicit_scale_and_exact_horizon(monkeypatch):
-    cfg=config(True);cfg['reward']['distance_reward_scale']=.01
+    cfg=config(True)
     env=make_combat_environment(cfg);env.reset(41)
     monkeypatch.setattr(env,'_advance',lambda *_:np.zeros(4))
     for step in range(1,1001):
         _,r,term,trunc,info=env.step(np.zeros((4,3)))
         assert not term and trunc==(step==1000)
-        np.testing.assert_allclose(r,-info['raw_nearest_distance_m']*.01,rtol=1e-7)
+        np.testing.assert_allclose(r,-info['raw_nearest_distance_m']*.001,rtol=1e-7)
     with pytest.raises(RuntimeError):env.step(np.zeros((4,3)))
 
 @pytest.mark.parametrize('field,value', [('environment_version','2.3'),('environment_variant','single_round_v2'),
     ('task_type','combat'),('action_semantics','delta_command'),('observation_dim',53),('num_agents',6)])
 def test_actor_init_rejects_incompatible_identity(field,value):
     from algorithm.mappo.trainer import MAPPO_IMPL_VERSION
-    extra=dict(environment_version='2.4',environment_variant='pursuit_v1',task_type='pursuit',
+    extra=dict(environment_version='2.4',environment_variant='pursuit_v2',task_type='pursuit',
         action_semantics='direct_physical_control',observation_dim=52,action_dim=3,num_agents=4)
     extra[field]=value
     with pytest.raises(RuntimeError):validate_actor_initialization(dict(algorithm='MAPPO',mappo_impl_version=MAPPO_IMPL_VERSION,extra=extra),config())
