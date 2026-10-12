@@ -27,12 +27,12 @@ def main():
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--mode", choices=("stochastic", "deterministic"), default="stochastic")
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cuda")
-    parser.add_argument("--env-config", default="configs/persistent_wave_v2_environment.yaml")
-    parser.add_argument("--algorithm-config", default="configs/madsac_persistent_wave_v2_3m.yaml")
+    parser.add_argument("--env-config", default="configs/single_round_environment.yaml")
+    parser.add_argument("--algorithm-config", default="configs/madsac_single_round_3m.yaml")
     parser.add_argument("--output")
     args = parser.parse_args()
-    if args.device == "cuda" and not torch.cuda.is_available():
-        raise RuntimeError("CUDA requested but unavailable")
+    if args.device != "cuda" or not torch.cuda.is_available():
+        raise RuntimeError("CUDA is mandatory for checkpoint evaluation")
     env_config = yaml.safe_load(resolved(args.env_config).read_text(encoding="utf-8"))
     algorithm_config = yaml.safe_load(resolved(args.algorithm_config).read_text(encoding="utf-8"))
     checkpoint = resolved(args.checkpoint)

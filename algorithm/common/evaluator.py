@@ -8,7 +8,7 @@ from env.factory import make_combat_environment
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_COMBAT_CONFIG = PROJECT_ROOT / "configs/combat_environment.yaml"
+DEFAULT_COMBAT_CONFIG = PROJECT_ROOT / "configs/single_round_environment.yaml"
 
 
 def episode_return_metrics(agent_returns: np.ndarray) -> tuple[float, float]:
@@ -19,63 +19,9 @@ def episode_return_metrics(agent_returns: np.ndarray) -> tuple[float, float]:
     return float(values.sum()), float(values.mean())
 
 
-def persistent_mission_metrics(records: list[dict[str, Any]]) -> dict[str, float]:
-    """Aggregate mission/wave metrics only when records use the wave variant."""
-    if not records or "waves_cleared" not in records[0]:
-        return {}
-    total_waves = int(records[0]["total_waves"])
-    result: dict[str, float] = {
-        "average_waves_cleared": float(np.mean([
-            row["waves_cleared"] for row in records
-        ])),
-    }
-    for wave_index in range(1, total_waves + 1):
-        result[f"clear_wave_{wave_index}_probability"] = float(np.mean([
-            row["waves_cleared"] >= wave_index for row in records
-        ]))
-        survivor_values = [
-            wave["red_survivors_end"]
-            for row in records
-            for wave in row.get("per_wave_metrics", [])
-            if wave["wave_index"] == wave_index
-            and wave.get("wave_cleared", True)
-        ]
-        result[f"average_red_survivors_after_wave_{wave_index}"] = (
-            float(np.mean(survivor_values)) if survivor_values else 0.0
-        )
-    total_blue_losses = float(sum(row["blue_losses"] for row in records))
-    total_red_losses = float(sum(row["red_losses"] for row in records))
-    result.update({
-        "total_blue_losses": total_blue_losses,
-        "total_red_losses": total_red_losses,
-        "kill_loss_ratio": total_blue_losses / max(total_red_losses, 1.0),
-    })
-    return result
-
-
-def evaluate(actor, config=DEFAULT_COMBAT_CONFIG, seeds=range(10_000_000, 10_000_020)) -> dict[str, float]:
-    records = []
-    policy_rows: list[dict[str, float]] = []
-    for seed in seeds:
-        env = make_combat_environment(config)
-        observation, _ = env.reset(int(seed))
-        agent_returns = np.zeros(4, dtype=float)
-        while True:
-            if hasattr(actor, "policy_statistics"):
-                policy_rows.append(actor.policy_statistics(
-                    observation, env.red_alive_mask
-                ))
-            actions = actor.act(observation, env.red_alive_mask, deterministic=True)
-            observation, reward, terminated, truncated, info = env.step(actions)
-            agent_returns += reward
-            if terminated or truncated:
-                team_return, mean_agent_return = episode_return_metrics(agent_returns)
-                records.append({
-                    "episode_return": team_return,
-                    "mean_agent_episode_return": mean_agent_return,
-                    **info,
-                })
-                break
+def aggregate_episode_records(records: list[dict[str, Any]]) -> dict[str, float]:
+    if not records:
+        raise ValueError("evaluation records must not be empty")
     mean = lambda key: float(np.mean([record[key] for record in records]))
     result = {
         "average_return": mean("episode_return"),
@@ -110,8 +56,34 @@ def evaluate(actor, config=DEFAULT_COMBAT_CONFIG, seeds=range(10_000_000, 10_000
             for name in ("r1", "r2", "r3", "r4")
         },
         "evaluation_episodes": len(records),
-        **persistent_mission_metrics(records),
     }
+    return result
+
+
+def evaluate(actor, config=DEFAULT_COMBAT_CONFIG, seeds=range(10_000_000, 10_000_020)) -> dict[str, float]:
+    records = []
+    policy_rows: list[dict[str, float]] = []
+    for seed in seeds:
+        env = make_combat_environment(config)
+        observation, _ = env.reset(int(seed))
+        agent_returns = np.zeros(4, dtype=float)
+        while True:
+            if hasattr(actor, "policy_statistics"):
+                policy_rows.append(actor.policy_statistics(
+                    observation, env.red_alive_mask
+                ))
+            actions = actor.act(observation, env.red_alive_mask, deterministic=True)
+            observation, reward, terminated, truncated, info = env.step(actions)
+            agent_returns += reward
+            if terminated or truncated:
+                team_return, mean_agent_return = episode_return_metrics(agent_returns)
+                records.append({
+                    "episode_return": team_return,
+                    "mean_agent_episode_return": mean_agent_return,
+                    **info,
+                })
+                break
+    result = aggregate_episode_records(records)
     if policy_rows:
         result.update({
             key: float(np.mean([row[key] for row in policy_rows]))
@@ -121,5 +93,5 @@ def evaluate(actor, config=DEFAULT_COMBAT_CONFIG, seeds=range(10_000_000, 10_000
 
 
 __all__ = [
-    "episode_return_metrics", "evaluate", "persistent_mission_metrics",
+    "aggregate_episode_records", "episode_return_metrics", "evaluate",
 ]

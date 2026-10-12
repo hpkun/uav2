@@ -1,4 +1,4 @@
-"""On-policy MAPPO runner using persistent parallel combat environments."""
+"""On-policy MAPPO runner for independent single-round episodes."""
 from __future__ import annotations
 
 import csv
@@ -15,7 +15,6 @@ from .trainer import MAPPO_IMPL_VERSION, MAPPOTrainer, RolloutBatch
 from algorithm.common.evaluator import (
     episode_return_metrics,
     evaluate,
-    persistent_mission_metrics,
 )
 from algorithm.common.vector_env import ParallelVectorEnv
 from algorithm.common.checkpoint import (
@@ -46,6 +45,8 @@ class MAPPOTrainingRunner:
         self.num_envs = int(num_envs or training["num_train_envs"])
         self.total_sampled_steps = int(total_sampled_steps or training["total_sampled_steps"])
         self.device = str(device or training["device"])
+        if torch.device(self.device).type != "cuda" or not torch.cuda.is_available():
+            raise RuntimeError("CUDA is mandatory for training; no CPU fallback")
         self.seed = int(training["seed"] if seed is None else seed)
         if output_dir is None:
             raise ValueError("output_dir must be the final run directory")
@@ -98,7 +99,6 @@ class MAPPOTrainingRunner:
         self.next_checkpoint = self.checkpoint_interval
 
     def startup_summary(self) -> dict[str, Any]:
-        wave_config = self.env_config.get("persistent_waves", {})
         return {
             "algorithm": "MAPPO", "mode": "smoke" if self.smoke else "formal",
             "device": self.device, "observation_dim": self.observation_dim,
@@ -118,9 +118,8 @@ class MAPPOTrainingRunner:
             "clip_ratio": self.trainer.clip_ratio,
             "entropy_coefficient": self.trainer.entropy_coefficient,
             "environment_variant": self.env_config.get(
-                "environment_variant", "direct_v2_3"
+                "environment_variant"
             ),
-            "total_waves": int(wave_config.get("total_waves", 1)),
             "max_steps": int(self.env_config["simulation"]["max_steps"]),
         }
 
@@ -134,7 +133,7 @@ class MAPPOTrainingRunner:
                 f"| total={s['total_sampled_steps']} | rollout={s['rollout_steps']} "
                 f"| epochs={s['ppo_epochs']} | minibatch={s['minibatch_size']} "
                 f"| gamma={s['gamma']} | lambda={s['gae_lambda']} | clip={s['clip_ratio']} "
-                f"| variant={s['environment_variant']} | waves={s['total_waves']} "
+                f"| variant={s['environment_variant']} "
                 f"| max_steps={s['max_steps']}")
 
     @staticmethod
@@ -322,10 +321,7 @@ class MAPPOTrainingRunner:
                 writer.writeheader(); writer.writerows(self.evaluation_history)
 
     def _evaluation_key(self, record: dict[str, float]) -> tuple[float, ...]:
-        return evaluation_selection_key(
-            record,
-            self.env_config.get("environment_variant", "direct_v2_3"),
-        )
+        return evaluation_selection_key(record)
 
     def _consider_best_evaluation(self, record: dict[str, float]) -> bool:
         if (
@@ -339,7 +335,7 @@ class MAPPOTrainingRunner:
 
     def save_checkpoint(self, path: str | Path) -> None:
         self.trainer.save(path, {"environment_version": ENVIRONMENT_VERSION,
-            "environment_variant": self.env_config.get("environment_variant", "direct_v2_3"),
+            "environment_variant": self.env_config.get("environment_variant"),
             "mappo_impl_version": MAPPO_IMPL_VERSION,
             "observation_dim": self.observation_dim,
             "action_dim": self.action_dim,
@@ -398,7 +394,6 @@ class MAPPOTrainingRunner:
             **{f"{side}_{event}_episode_rate": float(np.mean([r[f"{side}_first_{event}_step"] is not None for r in self.completed_records])) if self.completed_records else 0.0
                for side in ("red", "blue") for event in ("fire_window", "attempt", "hit", "kill")},
             **{f"average_episode_{name}_total": mean(f"episode_{name}_total") for name in ("r1", "r2", "r3", "r4")},
-            **persistent_mission_metrics(self.completed_records),
             "last_update_metrics": self.last_metrics, "evaluation_history": self.evaluation_history,
             "best_evaluation_steps": best.get("sampled_steps"),
             "best_evaluation_win_rate": best.get("win_rate"),

@@ -1,0 +1,2177 @@
+[
+  {
+    "original": "algorithm/evaluate_modular_mappo.py",
+    "archived": "legacy/algorithm/evaluate_modular_mappo.py",
+    "git_blob_sha1": "deefbdb240cf89b5e2248bc06294a637a40d6331"
+  },
+  {
+    "original": "algorithm/modular_mappo/__init__.py",
+    "archived": "legacy/algorithm/modular_mappo/__init__.py",
+    "git_blob_sha1": "77c4fec135b3faf213ebdc2b6c99e336ce6d767d"
+  },
+  {
+    "original": "algorithm/modular_mappo/buffer.py",
+    "archived": "legacy/algorithm/modular_mappo/buffer.py",
+    "git_blob_sha1": "1b2a6a95db09971b0ec665bcccd8023cc229adfb"
+  },
+  {
+    "original": "algorithm/modular_mappo/evaluation.py",
+    "archived": "legacy/algorithm/modular_mappo/evaluation.py",
+    "git_blob_sha1": "52bee9b1f70b3a6ddb30d32cba00c55fd877a016"
+  },
+  {
+    "original": "algorithm/modular_mappo/factory.py",
+    "archived": "legacy/algorithm/modular_mappo/factory.py",
+    "git_blob_sha1": "79d4102698120f03e00b2711449c55841de1e456"
+  },
+  {
+    "original": "algorithm/modular_mappo/networks.py",
+    "archived": "legacy/algorithm/modular_mappo/networks.py",
+    "git_blob_sha1": "85034e4027814bdd3ccc66d2e95d5f9826d33c9e"
+  },
+  {
+    "original": "algorithm/modular_mappo/protocol.py",
+    "archived": "legacy/algorithm/modular_mappo/protocol.py",
+    "git_blob_sha1": "a2fc0305e4afce80ed771410ce9e0645e4db78c6"
+  },
+  {
+    "original": "algorithm/modular_mappo/runner.py",
+    "archived": "legacy/algorithm/modular_mappo/runner.py",
+    "git_blob_sha1": "91995d886f1cf20b9b7ce8dc860a6988a63e6bcd"
+  },
+  {
+    "original": "algorithm/modular_mappo/trainer.py",
+    "archived": "legacy/algorithm/modular_mappo/trainer.py",
+    "git_blob_sha1": "da2629c47b0d2132aadede7f3fd47260e0f868b4"
+  },
+  {
+    "original": "algorithm/modules/__init__.py",
+    "archived": "legacy/algorithm/modules/__init__.py",
+    "git_blob_sha1": "034599d075fee87df061a68c4956122d45c738ff"
+  },
+  {
+    "original": "algorithm/modules/actor_gradient_clipping.py",
+    "archived": "legacy/algorithm/modules/actor_gradient_clipping.py",
+    "git_blob_sha1": "601fde517f9341d606484899138af7f6c5cdcd1b"
+  },
+  {
+    "original": "algorithm/modules/actor_kl_guard.py",
+    "archived": "legacy/algorithm/modules/actor_kl_guard.py",
+    "git_blob_sha1": "7d709e9a8fac767e04e0d580a2b7531f6871f2eb"
+  },
+  {
+    "original": "algorithm/modules/actor_lr_decay.py",
+    "archived": "legacy/algorithm/modules/actor_lr_decay.py",
+    "git_blob_sha1": "288a4c41db45a5b14dde0bce2be55df1c06e503c"
+  },
+  {
+    "original": "algorithm/modules/advantage_priority.py",
+    "archived": "legacy/algorithm/modules/advantage_priority.py",
+    "git_blob_sha1": "f2f3302ae0656011e68678707b69d21be9d95fc5"
+  },
+  {
+    "original": "algorithm/modules/base.py",
+    "archived": "legacy/algorithm/modules/base.py",
+    "git_blob_sha1": "56cf0bc9969cff032b63f6ead8673cefffbc78b6"
+  },
+  {
+    "original": "algorithm/modules/boundary_redistributed_segment_credit.py",
+    "archived": "legacy/algorithm/modules/boundary_redistributed_segment_credit.py",
+    "git_blob_sha1": "de8972243237d7e3ab352c0868c4e8ba751b70ed"
+  },
+  {
+    "original": "algorithm/modules/counterfactual_inter_wave_credit.py",
+    "archived": "legacy/algorithm/modules/counterfactual_inter_wave_credit.py",
+    "git_blob_sha1": "19372131f6f7fafd4ac79c656543056cb44a0266"
+  },
+  {
+    "original": "algorithm/modules/curriculum.py",
+    "archived": "legacy/algorithm/modules/curriculum.py",
+    "git_blob_sha1": "0fafe6f3ffaaa8346b8dbf82414ba1015e2bd213"
+  },
+  {
+    "original": "algorithm/modules/deployment_aligned_wave_exploration.py",
+    "archived": "legacy/algorithm/modules/deployment_aligned_wave_exploration.py",
+    "git_blob_sha1": "10478470b6c38aab40006b810fc0359c83aabb9c"
+  },
+  {
+    "original": "algorithm/modules/hierarchical_temporal_abstraction.py",
+    "archived": "legacy/algorithm/modules/hierarchical_temporal_abstraction.py",
+    "git_blob_sha1": "0e23eeb9a40b786d7aeb01a034f0b1147dae6efe"
+  },
+  {
+    "original": "algorithm/modules/hta_worker_consolidation.py",
+    "archived": "legacy/algorithm/modules/hta_worker_consolidation.py",
+    "git_blob_sha1": "a6bb5187a97ee6460b60ff92111a05e9e5cb6a64"
+  },
+  {
+    "original": "algorithm/modules/inter_wave_credit.py",
+    "archived": "legacy/algorithm/modules/inter_wave_credit.py",
+    "git_blob_sha1": "255c2388e67627b5d535b939244132c370c3e958"
+  },
+  {
+    "original": "algorithm/modules/milestone_aware_retention_credit.py",
+    "archived": "legacy/algorithm/modules/milestone_aware_retention_credit.py",
+    "git_blob_sha1": "5b20ba67b0b1904bd2ceadeecb1e3c5c86df7339"
+  },
+  {
+    "original": "algorithm/modules/mission_film.py",
+    "archived": "legacy/algorithm/modules/mission_film.py",
+    "git_blob_sha1": "2c80b0530d719eaa213f86e878b764cda0c00e24"
+  },
+  {
+    "original": "algorithm/modules/multi_wave_reward.py",
+    "archived": "legacy/algorithm/modules/multi_wave_reward.py",
+    "git_blob_sha1": "9f22887c3438a0b0cfaf6178d3026909d530da6f"
+  },
+  {
+    "original": "algorithm/modules/persistent_wave_trajectory_replay.py",
+    "archived": "legacy/algorithm/modules/persistent_wave_trajectory_replay.py",
+    "git_blob_sha1": "89a913c83260b5787c48655b2f40f4354f32e03f"
+  },
+  {
+    "original": "algorithm/modules/policy_anchor.py",
+    "archived": "legacy/algorithm/modules/policy_anchor.py",
+    "git_blob_sha1": "6ce5a1081be7847676de443135ee63d226c38036"
+  },
+  {
+    "original": "algorithm/modules/popart.py",
+    "archived": "legacy/algorithm/modules/popart.py",
+    "git_blob_sha1": "04e8993d1f37c4bd55e437fd82a138ac12d08ff8"
+  },
+  {
+    "original": "algorithm/modules/ppo_stabilization.py",
+    "archived": "legacy/algorithm/modules/ppo_stabilization.py",
+    "git_blob_sha1": "d1415d2b546ebb5705d7cf6d2a80fa697a43097e"
+  },
+  {
+    "original": "algorithm/modules/recurrent_memory.py",
+    "archived": "legacy/algorithm/modules/recurrent_memory.py",
+    "git_blob_sha1": "789df2c5c6ad2910f88d7e904bbfc9341f954bab"
+  },
+  {
+    "original": "algorithm/modules/reference_variance.py",
+    "archived": "legacy/algorithm/modules/reference_variance.py",
+    "git_blob_sha1": "94854c43841def52648727ad824e761c2a8017aa"
+  },
+  {
+    "original": "algorithm/modules/sequential_wave_gradient_projection.py",
+    "archived": "legacy/algorithm/modules/sequential_wave_gradient_projection.py",
+    "git_blob_sha1": "fc41f31bb021a2eb14e4dee97b3d5a0883140cca"
+  },
+  {
+    "original": "algorithm/modules/team_mean_credit.py",
+    "archived": "legacy/algorithm/modules/team_mean_credit.py",
+    "git_blob_sha1": "a7edec8049b1610063df9a03d335b837e1de3e38"
+  },
+  {
+    "original": "algorithm/modules/warm_start.py",
+    "archived": "legacy/algorithm/modules/warm_start.py",
+    "git_blob_sha1": "81d76d9313188f59777b59ccd9b870f3fbe560e7"
+  },
+  {
+    "original": "algorithm/modules/wave1_sensitivity_gating.py",
+    "archived": "legacy/algorithm/modules/wave1_sensitivity_gating.py",
+    "git_blob_sha1": "c0864a3fa4cfb124747cf2e6ae058d7ac361dc3f"
+  },
+  {
+    "original": "algorithm/modules/wave_balancing.py",
+    "archived": "legacy/algorithm/modules/wave_balancing.py",
+    "git_blob_sha1": "daf452f8282605ef06e55a74c62b7464609b5e37"
+  },
+  {
+    "original": "algorithm/modules/wave_context.py",
+    "archived": "legacy/algorithm/modules/wave_context.py",
+    "git_blob_sha1": "c4838b755503da2e97ecfdc250e88ab396847059"
+  },
+  {
+    "original": "algorithm/modules/wave_entry_curriculum.py",
+    "archived": "legacy/algorithm/modules/wave_entry_curriculum.py",
+    "git_blob_sha1": "72eeb42b18a3e74785ff34ed66af701aaba2f825"
+  },
+  {
+    "original": "algorithm/modules/wave_specific_actor_isolation.py",
+    "archived": "legacy/algorithm/modules/wave_specific_actor_isolation.py",
+    "git_blob_sha1": "e92bd2c826c49b24a93691dda284b818de509ca3"
+  },
+  {
+    "original": "algorithm/modules/wave_specific_mean_heads.py",
+    "archived": "legacy/algorithm/modules/wave_specific_mean_heads.py",
+    "git_blob_sha1": "fa5fe093f06ccfff543b39b706637c01fb76c805"
+  },
+  {
+    "original": "algorithm/modules/wave_survival_pbrs.py",
+    "archived": "legacy/algorithm/modules/wave_survival_pbrs.py",
+    "git_blob_sha1": "65fab9b0eb764041e24f0f40258fa53bda520487"
+  },
+  {
+    "original": "algorithm/train_modular_mappo.py",
+    "archived": "legacy/algorithm/train_modular_mappo.py",
+    "git_blob_sha1": "d84f1b4ac2229927776610128af072cb3fa8f407"
+  },
+  {
+    "original": "configs/combat_environment.yaml",
+    "archived": "legacy/configs/combat_environment.yaml",
+    "git_blob_sha1": "0e7de6e3580aa603f81fe13a3fb5d1c7294e35b2"
+  },
+  {
+    "original": "configs/dev_actor_grad_clip_05_control_300k.yaml",
+    "archived": "legacy/configs/dev_actor_grad_clip_05_control_300k.yaml",
+    "git_blob_sha1": "57ca4123e2e513393ddc92ceb1533e8b05986bd5"
+  },
+  {
+    "original": "configs/dev_actor_grad_clip_10_300k.yaml",
+    "archived": "legacy/configs/dev_actor_grad_clip_10_300k.yaml",
+    "git_blob_sha1": "f28589717ad828d0f9fdb21b240660ddec4bf822"
+  },
+  {
+    "original": "configs/dev_actor_mission_context_3m.yaml",
+    "archived": "legacy/configs/dev_actor_mission_context_3m.yaml",
+    "git_blob_sha1": "43468c181fefde0216df706011ebe8e93ee63edd"
+  },
+  {
+    "original": "configs/dev_actor_only_gru_history_3m.yaml",
+    "archived": "legacy/configs/dev_actor_only_gru_history_3m.yaml",
+    "git_blob_sha1": "f9fbac2a10e70f43c30022b39c8ef16c6025a479"
+  },
+  {
+    "original": "configs/dev_brsc_mappo_v1_3m.yaml",
+    "archived": "legacy/configs/dev_brsc_mappo_v1_3m.yaml",
+    "git_blob_sha1": "9c8e984ff336f2532759b65a7707179440a8a750"
+  },
+  {
+    "original": "configs/dev_c0r0_plain_mappo_900k.yaml",
+    "archived": "legacy/configs/dev_c0r0_plain_mappo_900k.yaml",
+    "git_blob_sha1": "859c4e3002bf0ef5fd2c53713ec288655f76be8a"
+  },
+  {
+    "original": "configs/dev_c0r1_pbrs_900k.yaml",
+    "archived": "legacy/configs/dev_c0r1_pbrs_900k.yaml",
+    "git_blob_sha1": "e279d5984a4c07636cb42611b51e7a446c0aa183"
+  },
+  {
+    "original": "configs/dev_c1r0_critic_context_900k.yaml",
+    "archived": "legacy/configs/dev_c1r0_critic_context_900k.yaml",
+    "git_blob_sha1": "b0414fa785e4aa90e27ce0f18a41c52f6d5fcd57"
+  },
+  {
+    "original": "configs/dev_c1r1_critic_context_pbrs_900k.yaml",
+    "archived": "legacy/configs/dev_c1r1_critic_context_pbrs_900k.yaml",
+    "git_blob_sha1": "e147b9ff0a72742e27446dc26763c3badfb79a7a"
+  },
+  {
+    "original": "configs/dev_caiw_mappo_v2_3m.yaml",
+    "archived": "legacy/configs/dev_caiw_mappo_v2_3m.yaml",
+    "git_blob_sha1": "a0e40defc4520e0bff7364520d06f59c47a9ae40"
+  },
+  {
+    "original": "configs/dev_critic_mission_context_common_900k.yaml",
+    "archived": "legacy/configs/dev_critic_mission_context_common_900k.yaml",
+    "git_blob_sha1": "82589dae4d1613750f4cce9ac06997c8bf5ff680"
+  },
+  {
+    "original": "configs/dev_dawe_fixed10_control_300k.yaml",
+    "archived": "legacy/configs/dev_dawe_fixed10_control_300k.yaml",
+    "git_blob_sha1": "3bf938962f6a230f1fafa83ed6008b834f0f7470"
+  },
+  {
+    "original": "configs/dev_dawe_fixed10_v1_300k.yaml",
+    "archived": "legacy/configs/dev_dawe_fixed10_v1_300k.yaml",
+    "git_blob_sha1": "75bdee9b96f59de789ac0b87d38b9233df0f4f40"
+  },
+  {
+    "original": "configs/dev_delayed_swgp_3m.yaml",
+    "archived": "legacy/configs/dev_delayed_swgp_3m.yaml",
+    "git_blob_sha1": "35ce26a57e7d90e9bbb5e987234608ed438524d6"
+  },
+  {
+    "original": "configs/dev_fbmr_mappo_continuation_1200k.yaml",
+    "archived": "legacy/configs/dev_fbmr_mappo_continuation_1200k.yaml",
+    "git_blob_sha1": "7b6b61ebc1b55dd582e8ed13160b7f265ec02037"
+  },
+  {
+    "original": "configs/dev_fbmr_mean_residual_1200k.yaml",
+    "archived": "legacy/configs/dev_fbmr_mean_residual_1200k.yaml",
+    "git_blob_sha1": "4e7f4fcf658b2a62111e688af4ff1563b368d471"
+  },
+  {
+    "original": "configs/dev_fbmr_stage2_common_1200k.yaml",
+    "archived": "legacy/configs/dev_fbmr_stage2_common_1200k.yaml",
+    "git_blob_sha1": "5783554cd142dffb94beb21f6a2ad7a9487cebc1"
+  },
+  {
+    "original": "configs/dev_fbmr_v2_dual_bound_1200k.yaml",
+    "archived": "legacy/configs/dev_fbmr_v2_dual_bound_1200k.yaml",
+    "git_blob_sha1": "c17d87146613ebed1fcfe0864e19102ce61fa2bc"
+  },
+  {
+    "original": "configs/dev_fire_ready_plain_3m.yaml",
+    "archived": "legacy/configs/dev_fire_ready_plain_3m.yaml",
+    "git_blob_sha1": "4e7156c1cd781c2bf655ecd133e963ed805b5bcf"
+  },
+  {
+    "original": "configs/dev_grea_common_400k.yaml",
+    "archived": "legacy/configs/dev_grea_common_400k.yaml",
+    "git_blob_sha1": "9ec853e5bfbd78cea3f6f1dc4d9d23db3124986d"
+  },
+  {
+    "original": "configs/dev_grea_full_ea_400k.yaml",
+    "archived": "legacy/configs/dev_grea_full_ea_400k.yaml",
+    "git_blob_sha1": "6155a82e06a305b1736606539d901ecda6d82317"
+  },
+  {
+    "original": "configs/dev_grea_gated_ea_400k.yaml",
+    "archived": "legacy/configs/dev_grea_gated_ea_400k.yaml",
+    "git_blob_sha1": "79efd0207d2b2508cb84d9ad4e48d20035039ea2"
+  },
+  {
+    "original": "configs/dev_grea_mappo_400k.yaml",
+    "archived": "legacy/configs/dev_grea_mappo_400k.yaml",
+    "git_blob_sha1": "b350214c26bc107e600b2267a9014f18e47f70dd"
+  },
+  {
+    "original": "configs/dev_grea_residual_ea_400k.yaml",
+    "archived": "legacy/configs/dev_grea_residual_ea_400k.yaml",
+    "git_blob_sha1": "8d6e6413aa7247af89a917a9c26f2da9c949b1c9"
+  },
+  {
+    "original": "configs/dev_hta_mappo_v1_3m.yaml",
+    "archived": "legacy/configs/dev_hta_mappo_v1_3m.yaml",
+    "git_blob_sha1": "ee6992f1aa2f4427a9844767cd02ad5aa72db962"
+  },
+  {
+    "original": "configs/dev_hta_mappo_v2_3m.yaml",
+    "archived": "legacy/configs/dev_hta_mappo_v2_3m.yaml",
+    "git_blob_sha1": "8c13cc90013ccbeb4ed4d23efc26fc7c2b680033"
+  },
+  {
+    "original": "configs/dev_iwsc_mappo_3m.yaml",
+    "archived": "legacy/configs/dev_iwsc_mappo_3m.yaml",
+    "git_blob_sha1": "afb0704a37741569d2162f77e7e04e61dde04019"
+  },
+  {
+    "original": "configs/dev_jiao2025_core_3m.yaml",
+    "archived": "legacy/configs/dev_jiao2025_core_3m.yaml",
+    "git_blob_sha1": "512f5d399ded130c731576e83038e6a83ee745db"
+  },
+  {
+    "original": "configs/dev_jiao2025_matched_plain_3m.yaml",
+    "archived": "legacy/configs/dev_jiao2025_matched_plain_3m.yaml",
+    "git_blob_sha1": "68b3638c327aa68d8e0f65629758d45611462556"
+  },
+  {
+    "original": "configs/dev_marc_credit_balance_1m.yaml",
+    "archived": "legacy/configs/dev_marc_credit_balance_1m.yaml",
+    "git_blob_sha1": "936d401ebb94e53aed1dd97fa33117d106561246"
+  },
+  {
+    "original": "configs/dev_marc_factorial_balance_only_3m.yaml",
+    "archived": "legacy/configs/dev_marc_factorial_balance_only_3m.yaml",
+    "git_blob_sha1": "1eea904c2dbbd24bb021153f77405b0f9ef4a28d"
+  },
+  {
+    "original": "configs/dev_marc_factorial_credit_only_3m.yaml",
+    "archived": "legacy/configs/dev_marc_factorial_credit_only_3m.yaml",
+    "git_blob_sha1": "c7ae195dfda0ddd6b81759573e601a2b18065aa2"
+  },
+  {
+    "original": "configs/dev_marc_factorial_full_3m.yaml",
+    "archived": "legacy/configs/dev_marc_factorial_full_3m.yaml",
+    "git_blob_sha1": "b63c7a0dffc1a87837d86f9216d2fac6921dc2f9"
+  },
+  {
+    "original": "configs/dev_marc_factorial_none_3m.yaml",
+    "archived": "legacy/configs/dev_marc_factorial_none_3m.yaml",
+    "git_blob_sha1": "1f4f5417186041a201523eff6771a15252f04ff1"
+  },
+  {
+    "original": "configs/dev_marc_mappo_v1_1m.yaml",
+    "archived": "legacy/configs/dev_marc_mappo_v1_1m.yaml",
+    "git_blob_sha1": "da754690064c60e6ecf26e8bec058ecb2286f4b3"
+  },
+  {
+    "original": "configs/dev_marc_mappo_v2_1m.yaml",
+    "archived": "legacy/configs/dev_marc_mappo_v2_1m.yaml",
+    "git_blob_sha1": "96ac123af19cc7916c5a929122b84eeb3f9da900"
+  },
+  {
+    "original": "configs/dev_marc_state_memory_v1_2m.yaml",
+    "archived": "legacy/configs/dev_marc_state_memory_v1_2m.yaml",
+    "git_blob_sha1": "4ed144e07a9e07300cad464c6463c1fcd4801893"
+  },
+  {
+    "original": "configs/dev_marc_wsgru_v1_1m.yaml",
+    "archived": "legacy/configs/dev_marc_wsgru_v1_1m.yaml",
+    "git_blob_sha1": "cb95456b8a7f878804ce6fed5ad371a26c965966"
+  },
+  {
+    "original": "configs/dev_mission_aware_film_3m.yaml",
+    "archived": "legacy/configs/dev_mission_aware_film_3m.yaml",
+    "git_blob_sha1": "b3bb4d0d1800bde3990dbbef1555223ece84747a"
+  },
+  {
+    "original": "configs/dev_mission_aware_film_kl_guard_3m.yaml",
+    "archived": "legacy/configs/dev_mission_aware_film_kl_guard_3m.yaml",
+    "git_blob_sha1": "187c2dce3cff399d4c4b68b733b3821bad453851"
+  },
+  {
+    "original": "configs/dev_pwtr_current_actor_only_300k.yaml",
+    "archived": "legacy/configs/dev_pwtr_current_actor_only_300k.yaml",
+    "git_blob_sha1": "9948dfb79c23ab0bcc3a742cb362d4b89c73c626"
+  },
+  {
+    "original": "configs/dev_pwtr_current_critic_only_300k.yaml",
+    "archived": "legacy/configs/dev_pwtr_current_critic_only_300k.yaml",
+    "git_blob_sha1": "6dc0daa9d6496bbd2f479838a22e19d8d199e1d1"
+  },
+  {
+    "original": "configs/dev_pwtr_current_extra_300k.yaml",
+    "archived": "legacy/configs/dev_pwtr_current_extra_300k.yaml",
+    "git_blob_sha1": "003c026e3a69b232340e0b44e6a60cd55abbf6b4"
+  },
+  {
+    "original": "configs/dev_pwtr_full_300k.yaml",
+    "archived": "legacy/configs/dev_pwtr_full_300k.yaml",
+    "git_blob_sha1": "7389968187d3387dd86006e19bc2929bc73a08b0"
+  },
+  {
+    "original": "configs/dev_pwtr_plain_300k.yaml",
+    "archived": "legacy/configs/dev_pwtr_plain_300k.yaml",
+    "git_blob_sha1": "e78131a536d33e6b2f15a62c49f2dab9eafefd86"
+  },
+  {
+    "original": "configs/dev_pwtr_priority_recent_300k.yaml",
+    "archived": "legacy/configs/dev_pwtr_priority_recent_300k.yaml",
+    "git_blob_sha1": "1492ddb86908bd86a99f1ca213b6515f093359c2"
+  },
+  {
+    "original": "configs/dev_pwtr_recent_actor_only_300k.yaml",
+    "archived": "legacy/configs/dev_pwtr_recent_actor_only_300k.yaml",
+    "git_blob_sha1": "23af6ec4300d44d178e79e88d84cfd2b0771460e"
+  },
+  {
+    "original": "configs/dev_pwtr_recent_critic_only_300k.yaml",
+    "archived": "legacy/configs/dev_pwtr_recent_critic_only_300k.yaml",
+    "git_blob_sha1": "6070919736e0991a5a77332104c37759c6268b53"
+  },
+  {
+    "original": "configs/dev_pwtr_stratified_300k.yaml",
+    "archived": "legacy/configs/dev_pwtr_stratified_300k.yaml",
+    "git_blob_sha1": "f8674a8e8924f86c819704711a5e4b38c12ca40e"
+  },
+  {
+    "original": "configs/dev_pwtr_uniform_recent_300k.yaml",
+    "archived": "legacy/configs/dev_pwtr_uniform_recent_300k.yaml",
+    "git_blob_sha1": "d7c84465d6f4b7f4e44c0411a1c2702598832587"
+  },
+  {
+    "original": "configs/dev_rv_fixed10_control_300k.yaml",
+    "archived": "legacy/configs/dev_rv_fixed10_control_300k.yaml",
+    "git_blob_sha1": "80aa294ced32eda30f524c8d16b24cdbe73cce0e"
+  },
+  {
+    "original": "configs/dev_rv_mappo_v1_300k.yaml",
+    "archived": "legacy/configs/dev_rv_mappo_v1_300k.yaml",
+    "git_blob_sha1": "69bbe37369dc69a0a82fc25c5a632ea746aee658"
+  },
+  {
+    "original": "configs/dev_swgp_3m.yaml",
+    "archived": "legacy/configs/dev_swgp_3m.yaml",
+    "git_blob_sha1": "3978a3500566a99420bb8775237c0a84c37f8415"
+  },
+  {
+    "original": "configs/dev_swgp_branch_3m.yaml",
+    "archived": "legacy/configs/dev_swgp_branch_3m.yaml",
+    "git_blob_sha1": "e77cc0c3bd10ac64c86b56a3b393c9434bc7b870"
+  },
+  {
+    "original": "configs/dev_swgp_branch_control_3m.yaml",
+    "archived": "legacy/configs/dev_swgp_branch_control_3m.yaml",
+    "git_blob_sha1": "d0e1eb9b323ff917ee6c2e36f9e4e998e00d9278"
+  },
+  {
+    "original": "configs/dev_team_credit_control_300k.yaml",
+    "archived": "legacy/configs/dev_team_credit_control_300k.yaml",
+    "git_blob_sha1": "dff89c9ff230f6b1cc4c652600b17275d8a24971"
+  },
+  {
+    "original": "configs/dev_team_credit_teammean_300k.yaml",
+    "archived": "legacy/configs/dev_team_credit_teammean_300k.yaml",
+    "git_blob_sha1": "79a6bb01a1c19ca305dd093078ab8551830b5dae"
+  },
+  {
+    "original": "configs/dev_w1sg_current_actor_300k.yaml",
+    "archived": "legacy/configs/dev_w1sg_current_actor_300k.yaml",
+    "git_blob_sha1": "efcc17f5571bb324f2048e2fdf04b8e9fd4f45c8"
+  },
+  {
+    "original": "configs/dev_wave_balance_3m.yaml",
+    "archived": "legacy/configs/dev_wave_balance_3m.yaml",
+    "git_blob_sha1": "cda4e3cfdaccf76c7c92d9286e9f183b4a7d8d29"
+  },
+  {
+    "original": "configs/dev_wave_balanced_curriculum_3m.yaml",
+    "archived": "legacy/configs/dev_wave_balanced_curriculum_3m.yaml",
+    "git_blob_sha1": "61f1d352b210c48f7fb57cb595bc8bf464871bc7"
+  },
+  {
+    "original": "configs/dev_wave_entry_curriculum_3m.yaml",
+    "archived": "legacy/configs/dev_wave_entry_curriculum_3m.yaml",
+    "git_blob_sha1": "7d7e38298111ee809e1b4c5661e333ddbed17f5e"
+  },
+  {
+    "original": "configs/dev_ws_pbrs_common_900k.yaml",
+    "archived": "legacy/configs/dev_ws_pbrs_common_900k.yaml",
+    "git_blob_sha1": "015db6e2efa120441784a3b2d45d72b5e3c65413"
+  },
+  {
+    "original": "configs/dev_ws_pbrs_mappo_baseline_900k.yaml",
+    "archived": "legacy/configs/dev_ws_pbrs_mappo_baseline_900k.yaml",
+    "git_blob_sha1": "81f9123c6ccb4a7d6da9b9334fbdf0a17d1a5857"
+  },
+  {
+    "original": "configs/dev_ws_pbrs_proposed_900k.yaml",
+    "archived": "legacy/configs/dev_ws_pbrs_proposed_900k.yaml",
+    "git_blob_sha1": "a935f0b35fd461a5855511cd9076e6c24dea92e7"
+  },
+  {
+    "original": "configs/dev_wsai_300k.yaml",
+    "archived": "legacy/configs/dev_wsai_300k.yaml",
+    "git_blob_sha1": "6142117499a2cf34ebec6a20c1a60181bfbb56f6"
+  },
+  {
+    "original": "configs/dev_wsmh_300k.yaml",
+    "archived": "legacy/configs/dev_wsmh_300k.yaml",
+    "git_blob_sha1": "e7be479147d0927e2353014fe083eca500bc5965"
+  },
+  {
+    "original": "configs/diag_learnability_1wave_environment.yaml",
+    "archived": "legacy/configs/diag_learnability_1wave_environment.yaml",
+    "git_blob_sha1": "456e637e75936439da8d92981593b7a85645727d"
+  },
+  {
+    "original": "configs/diag_learnability_2wave_environment.yaml",
+    "archived": "legacy/configs/diag_learnability_2wave_environment.yaml",
+    "git_blob_sha1": "78e05eb4251522273125909ab4326c1d5d4a81c2"
+  },
+  {
+    "original": "configs/diag_mappo_learnability_common_3m.yaml",
+    "archived": "legacy/configs/diag_mappo_learnability_common_3m.yaml",
+    "git_blob_sha1": "b6eaebb838a8a33cc92c9ce00837f53b9988e64b"
+  },
+  {
+    "original": "configs/ea_hwb_1p5m.yaml",
+    "archived": "legacy/configs/ea_hwb_1p5m.yaml",
+    "git_blob_sha1": "29367032f835a0a6d006b8483e671aa8598b754b"
+  },
+  {
+    "original": "configs/ea_hwb_smoke.yaml",
+    "archived": "legacy/configs/ea_hwb_smoke.yaml",
+    "git_blob_sha1": "3ee4facabdbdc894c2961ac2dfe2d581280d818f"
+  },
+  {
+    "original": "configs/ea_hwb_stable_1p5m.yaml",
+    "archived": "legacy/configs/ea_hwb_stable_1p5m.yaml",
+    "git_blob_sha1": "5edb9e92cf984b979cbc953d86f131a2382c88eb"
+  },
+  {
+    "original": "configs/ea_hwb_stable_smoke.yaml",
+    "archived": "legacy/configs/ea_hwb_stable_smoke.yaml",
+    "git_blob_sha1": "0e51b48d138b904acfd042f8900cf6c7a8a49d49"
+  },
+  {
+    "original": "configs/ea_mappo_1p5m.yaml",
+    "archived": "legacy/configs/ea_mappo_1p5m.yaml",
+    "git_blob_sha1": "424ae7f7543e27f48d0440c1b592b051a60b716d"
+  },
+  {
+    "original": "configs/ea_mappo_smoke.yaml",
+    "archived": "legacy/configs/ea_mappo_smoke.yaml",
+    "git_blob_sha1": "a1b7d3374b1a033203b6c1946bc8e2be7790143c"
+  },
+  {
+    "original": "configs/ea_wb_1p5m.yaml",
+    "archived": "legacy/configs/ea_wb_1p5m.yaml",
+    "git_blob_sha1": "eaae634c1d24980c9f761da309a6fa5890fd8719"
+  },
+  {
+    "original": "configs/ea_wb_actor_lr_decay_900k.yaml",
+    "archived": "legacy/configs/ea_wb_actor_lr_decay_900k.yaml",
+    "git_blob_sha1": "b47b60700be2034f95b255daf89a4c5bbc778be3"
+  },
+  {
+    "original": "configs/ea_wb_smoke.yaml",
+    "archived": "legacy/configs/ea_wb_smoke.yaml",
+    "git_blob_sha1": "69fb9e13af6374968d7c9f8c92a276de7c52b955"
+  },
+  {
+    "original": "configs/formal_eawb_common_900k.yaml",
+    "archived": "legacy/configs/formal_eawb_common_900k.yaml",
+    "git_blob_sha1": "40a70b5e6dce6850fe7c990b54e258b2a69d68af"
+  },
+  {
+    "original": "configs/formal_eawb_ea_900k.yaml",
+    "archived": "legacy/configs/formal_eawb_ea_900k.yaml",
+    "git_blob_sha1": "0a09cdb5e2625c35f0fe501a473b71350d6014b6"
+  },
+  {
+    "original": "configs/formal_eawb_ea_wb_900k.yaml",
+    "archived": "legacy/configs/formal_eawb_ea_wb_900k.yaml",
+    "git_blob_sha1": "c7fe476f5cf4e2ca55f7ae8c6e36d4d3c4f4643b"
+  },
+  {
+    "original": "configs/formal_eawb_ea_wb_fixed_900k.yaml",
+    "archived": "legacy/configs/formal_eawb_ea_wb_fixed_900k.yaml",
+    "git_blob_sha1": "619643392b87504b7bde7b13ed12dde2175195fa"
+  },
+  {
+    "original": "configs/formal_eawb_mappo_900k.yaml",
+    "archived": "legacy/configs/formal_eawb_mappo_900k.yaml",
+    "git_blob_sha1": "38c6393afe654595a744d2790c475f182b1b3ddd"
+  },
+  {
+    "original": "configs/formal_eawb_wb_900k.yaml",
+    "archived": "legacy/configs/formal_eawb_wb_900k.yaml",
+    "git_blob_sha1": "b2f42c441293947cd336080334dd13e19312defe"
+  },
+  {
+    "original": "configs/hwb_1p5m.yaml",
+    "archived": "legacy/configs/hwb_1p5m.yaml",
+    "git_blob_sha1": "a0acd925d9d72d12920059387652ec46414728e3"
+  },
+  {
+    "original": "configs/hwb_smoke.yaml",
+    "archived": "legacy/configs/hwb_smoke.yaml",
+    "git_blob_sha1": "37c971c835149f9555475a46eef27977bb0d9bf4"
+  },
+  {
+    "original": "configs/jiao2025_core_1p5m.yaml",
+    "archived": "legacy/configs/jiao2025_core_1p5m.yaml",
+    "git_blob_sha1": "05777ef8e12719e7b6f963edc735ff63091e613d"
+  },
+  {
+    "original": "configs/jiao2025_core_smoke.yaml",
+    "archived": "legacy/configs/jiao2025_core_smoke.yaml",
+    "git_blob_sha1": "af250b7524b0bfb549f12aa207d6cb888b034f6d"
+  },
+  {
+    "original": "configs/jiao2025_full_1p5m.yaml",
+    "archived": "legacy/configs/jiao2025_full_1p5m.yaml",
+    "git_blob_sha1": "05912507fe260c8d26ded5cb6d0aa6e2b64fce0d"
+  },
+  {
+    "original": "configs/jiao2025_full_smoke.yaml",
+    "archived": "legacy/configs/jiao2025_full_smoke.yaml",
+    "git_blob_sha1": "555007ee0b93291878bf74dd1a7a3f77699c189c"
+  },
+  {
+    "original": "configs/jiao2025_paper_core.yaml",
+    "archived": "legacy/configs/jiao2025_paper_core.yaml",
+    "git_blob_sha1": "743745df015e4a7de1b445564b08322434829639"
+  },
+  {
+    "original": "configs/madsac_persistent_wave_v2_3m.yaml",
+    "archived": "legacy/configs/madsac_persistent_wave_v2_3m.yaml",
+    "git_blob_sha1": "d9f5cc64731317660f6b92ac511d2eb9d7ee3339"
+  },
+  {
+    "original": "configs/mappo_attention_baseline_1p5m.yaml",
+    "archived": "legacy/configs/mappo_attention_baseline_1p5m.yaml",
+    "git_blob_sha1": "170c228bca9baaf2f5a0887af0724578db3ab0ed"
+  },
+  {
+    "original": "configs/mappo_attn_lr_control_3e4_cont_1p5m.yaml",
+    "archived": "legacy/configs/mappo_attn_lr_control_3e4_cont_1p5m.yaml",
+    "git_blob_sha1": "de34ce0a5ec5b85809b7c527548deec3707bdc61"
+  },
+  {
+    "original": "configs/mappo_attn_lr_treatment_1e4_cont_1p5m.yaml",
+    "archived": "legacy/configs/mappo_attn_lr_treatment_1e4_cont_1p5m.yaml",
+    "git_blob_sha1": "54bcbda03be1782bde4dcd1d7fba946333d51398"
+  },
+  {
+    "original": "configs/mappo_mlp_baseline_1p5m.yaml",
+    "archived": "legacy/configs/mappo_mlp_baseline_1p5m.yaml",
+    "git_blob_sha1": "cf6df767c6c00fe118c319d076a77fc7777f6c30"
+  },
+  {
+    "original": "configs/mappo_mlp_single_wave_stability_1p5m.yaml",
+    "archived": "legacy/configs/mappo_mlp_single_wave_stability_1p5m.yaml",
+    "git_blob_sha1": "babe5a0a2eaa86f49b3e05590f8da67fa95fbd75"
+  },
+  {
+    "original": "configs/mappo_persistent_wave.yaml",
+    "archived": "legacy/configs/mappo_persistent_wave.yaml",
+    "git_blob_sha1": "348a02b08912a6bf8bf3b95a02c653e1c3585576"
+  },
+  {
+    "original": "configs/modular_mappo_persistent.yaml",
+    "archived": "legacy/configs/modular_mappo_persistent.yaml",
+    "git_blob_sha1": "f81a7f6b05f7730a5fe07a3b44d98134b06cca05"
+  },
+  {
+    "original": "configs/persistent_wave_environment.yaml",
+    "archived": "legacy/configs/persistent_wave_environment.yaml",
+    "git_blob_sha1": "1f9642ed9491a6ce40f02500a8815ebef2587518"
+  },
+  {
+    "original": "configs/persistent_wave_v2_blue433_environment.yaml",
+    "archived": "legacy/configs/persistent_wave_v2_blue433_environment.yaml",
+    "git_blob_sha1": "f413a8b1c0d4ae2d2a171fe2be1dab6b887f47f8"
+  },
+  {
+    "original": "configs/persistent_wave_v2_blue443_environment.yaml",
+    "archived": "legacy/configs/persistent_wave_v2_blue443_environment.yaml",
+    "git_blob_sha1": "81c8506281c5670a4b379be9bbd3f60cc3e5a4a5"
+  },
+  {
+    "original": "configs/persistent_wave_v2_environment.yaml",
+    "archived": "legacy/configs/persistent_wave_v2_environment.yaml",
+    "git_blob_sha1": "4a718685a7e2725ba19a225dac4d5a4e0dc7d029"
+  },
+  {
+    "original": "configs/persistent_wave_v2_fire_ready_environment.yaml",
+    "archived": "legacy/configs/persistent_wave_v2_fire_ready_environment.yaml",
+    "git_blob_sha1": "d369875daf79d00b6e729a343db51f261ea90ea9"
+  },
+  {
+    "original": "configs/persistent_wave_v2_single_wave_control.yaml",
+    "archived": "legacy/configs/persistent_wave_v2_single_wave_control.yaml",
+    "git_blob_sha1": "222d96b21ac4c4114990fa4f3266526649f9a332"
+  },
+  {
+    "original": "configs/pw_alloff_matched_1p5m.yaml",
+    "archived": "legacy/configs/pw_alloff_matched_1p5m.yaml",
+    "git_blob_sha1": "39db1388019d75b6d3a22bebbf53ebe5e6a83ed1"
+  },
+  {
+    "original": "configs/pw_m1_wave_context.yaml",
+    "archived": "legacy/configs/pw_m1_wave_context.yaml",
+    "git_blob_sha1": "4cb3dc86eb0ca4af434b3cca15c7b206713e8cf5"
+  },
+  {
+    "original": "configs/pw_m2_gru.yaml",
+    "archived": "legacy/configs/pw_m2_gru.yaml",
+    "git_blob_sha1": "29bab5036d1d023a6e0b1eb628f2546173ca8c38"
+  },
+  {
+    "original": "configs/pw_m3_popart.yaml",
+    "archived": "legacy/configs/pw_m3_popart.yaml",
+    "git_blob_sha1": "97ff11f97dbd7860b2aaa0d14848ecb777de67f7"
+  },
+  {
+    "original": "configs/pw_m4_wave_reward.yaml",
+    "archived": "legacy/configs/pw_m4_wave_reward.yaml",
+    "git_blob_sha1": "9f9aeac66bd6bc50ea45260a6b1cfbe895f691b1"
+  },
+  {
+    "original": "configs/pw_m5_wave_balance.yaml",
+    "archived": "legacy/configs/pw_m5_wave_balance.yaml",
+    "git_blob_sha1": "51c262322a42be72f0df6129b8b61da31e6e348f"
+  },
+  {
+    "original": "configs/pw_m6_m8_anchor_c0001_300k.yaml",
+    "archived": "legacy/configs/pw_m6_m8_anchor_c0001_300k.yaml",
+    "git_blob_sha1": "6d0894c4003197422954d4de04c11e0e2517ce7a"
+  },
+  {
+    "original": "configs/pw_m6_m8_anchor_c0003_300k.yaml",
+    "archived": "legacy/configs/pw_m6_m8_anchor_c0003_300k.yaml",
+    "git_blob_sha1": "ca1b1edf801c9fa370f5e9b198593ded388e74c9"
+  },
+  {
+    "original": "configs/pw_m6_m8_anchor_c001_300k.yaml",
+    "archived": "legacy/configs/pw_m6_m8_anchor_c001_300k.yaml",
+    "git_blob_sha1": "c2bfc2a2294f56a7bf8fd8e1a361bfb40de57adf"
+  },
+  {
+    "original": "configs/pw_m6_m8_anchor_c003_300k.yaml",
+    "archived": "legacy/configs/pw_m6_m8_anchor_c003_300k.yaml",
+    "git_blob_sha1": "0dc1f3f0f27294e3a43a8b0d1d1f18d3e98be1e4"
+  },
+  {
+    "original": "configs/pw_m6_m8_anchor_c01_300k.yaml",
+    "archived": "legacy/configs/pw_m6_m8_anchor_c01_300k.yaml",
+    "git_blob_sha1": "7c1360e3897744cea642e4aac476cee20621b89f"
+  },
+  {
+    "original": "configs/pw_m6_screen_control_300k.yaml",
+    "archived": "legacy/configs/pw_m6_screen_control_300k.yaml",
+    "git_blob_sha1": "7780234d414cc65f2b8394b206bc4b276bdadc54"
+  },
+  {
+    "original": "configs/pw_m6_warm_start.yaml",
+    "archived": "legacy/configs/pw_m6_warm_start.yaml",
+    "git_blob_sha1": "a7c0dd5e4165794bd7826cc8fe5f06e9d35b3f2d"
+  },
+  {
+    "original": "configs/pw_m7_curriculum.yaml",
+    "archived": "legacy/configs/pw_m7_curriculum.yaml",
+    "git_blob_sha1": "b893281e614e2c6e6ef421e56456d3d3ea8ea319"
+  },
+  {
+    "original": "configs/pw_m8_policy_anchor.yaml",
+    "archived": "legacy/configs/pw_m8_policy_anchor.yaml",
+    "git_blob_sha1": "486cf276cb4b8c0a044b6d50b887a2badfb7ac3b"
+  },
+  {
+    "original": "env/persistent_env.py",
+    "archived": "legacy/env/persistent_env.py",
+    "git_blob_sha1": "eb8e2b63097048b31f0337c199b5bcfe639cc06c"
+  },
+  {
+    "original": "README.md",
+    "archived": "legacy/README_original.md",
+    "git_blob_sha1": "c2700008be25b8af926b4e33e06b2efcad95c61a"
+  },
+  {
+    "original": "tests/test_actor_grad_clip_mappo.py",
+    "archived": "legacy/tests/test_actor_grad_clip_mappo.py",
+    "git_blob_sha1": "878609eb90a60f4656f56c1ffb0fcfb2741fa0a9"
+  },
+  {
+    "original": "tests/test_actor_lr_decay_branch.py",
+    "archived": "legacy/tests/test_actor_lr_decay_branch.py",
+    "git_blob_sha1": "9653ad17b9bad1ede9f352269cb4b16b698c9dbc"
+  },
+  {
+    "original": "tests/test_actor_mission_context.py",
+    "archived": "legacy/tests/test_actor_mission_context.py",
+    "git_blob_sha1": "a6ef92fe232325f6ac368f6018eb7199e5c441f9"
+  },
+  {
+    "original": "tests/test_actor_only_gru_history.py",
+    "archived": "legacy/tests/test_actor_only_gru_history.py",
+    "git_blob_sha1": "cdb87e009cf7c8996513fdb0244782ea7ac3d42f"
+  },
+  {
+    "original": "tests/test_analyze_caiw_mappo.py",
+    "archived": "legacy/tests/test_analyze_caiw_mappo.py",
+    "git_blob_sha1": "3c8a621e81c9a1dd900b8748b7d3f34b225e2da5"
+  },
+  {
+    "original": "tests/test_brsc_mappo.py",
+    "archived": "legacy/tests/test_brsc_mappo.py",
+    "git_blob_sha1": "c8f5c20a3e5c8da1a60339649a256ceacd3d97e8"
+  },
+  {
+    "original": "tests/test_caiw_mappo.py",
+    "archived": "legacy/tests/test_caiw_mappo.py",
+    "git_blob_sha1": "c0fe078d5a25575c1f1dea1c519799485b7ef643"
+  },
+  {
+    "original": "tests/test_clipping_geometry_audit.py",
+    "archived": "legacy/tests/test_clipping_geometry_audit.py",
+    "git_blob_sha1": "2aa6227ca792386e70fc531c6835885ae91230a5"
+  },
+  {
+    "original": "tests/test_combat_visualization.py",
+    "archived": "legacy/tests/test_combat_visualization.py",
+    "git_blob_sha1": "c18c78ebad7c907d8693b02ec848bbbeb3f86840"
+  },
+  {
+    "original": "tests/test_critic_mission_context_factorial.py",
+    "archived": "legacy/tests/test_critic_mission_context_factorial.py",
+    "git_blob_sha1": "8c8047c9fb3568e3a33ea11c7863dc328b54faee"
+  },
+  {
+    "original": "tests/test_dawe_fixed_bank_kl_decomposition.py",
+    "archived": "legacy/tests/test_dawe_fixed_bank_kl_decomposition.py",
+    "git_blob_sha1": "b5d90ecab31d7e084633a33c359d2e0c5b9840ec"
+  },
+  {
+    "original": "tests/test_dawe_mappo.py",
+    "archived": "legacy/tests/test_dawe_mappo.py",
+    "git_blob_sha1": "8c34951e0a07cba6dc15ae81b077bbf0364d8951"
+  },
+  {
+    "original": "tests/test_delayed_swgp_mappo.py",
+    "archived": "legacy/tests/test_delayed_swgp_mappo.py",
+    "git_blob_sha1": "11f57da5fca59b4fd1117e633d2d21af479e9a51"
+  },
+  {
+    "original": "tests/test_ea_hwb_mappo.py",
+    "archived": "legacy/tests/test_ea_hwb_mappo.py",
+    "git_blob_sha1": "bb5d99b5f9d4e33c6b99f02aafad0394ec52ecf3"
+  },
+  {
+    "original": "tests/test_eawb_formal_multiseed.py",
+    "archived": "legacy/tests/test_eawb_formal_multiseed.py",
+    "git_blob_sha1": "ab640ca5b11a6403169353430e008395cdb256f5"
+  },
+  {
+    "original": "tests/test_experiment_infrastructure.py",
+    "archived": "legacy/tests/test_experiment_infrastructure.py",
+    "git_blob_sha1": "fbf840300ad524a43297dde48b29dcc3de9fbb40"
+  },
+  {
+    "original": "tests/test_fbmr_entity_actor.py",
+    "archived": "legacy/tests/test_fbmr_entity_actor.py",
+    "git_blob_sha1": "ce4ef4676bf1ccfb14347f82a11605d29d7a2165"
+  },
+  {
+    "original": "tests/test_fbmr_stage2_development_protocol.py",
+    "archived": "legacy/tests/test_fbmr_stage2_development_protocol.py",
+    "git_blob_sha1": "e0a8c7f9e8d5b935b5b7e2ee6642b0484706f9cf"
+  },
+  {
+    "original": "tests/test_fbmr_v2_development_protocol.py",
+    "archived": "legacy/tests/test_fbmr_v2_development_protocol.py",
+    "git_blob_sha1": "d845882eb074734165d12b1344758572fab208ed"
+  },
+  {
+    "original": "tests/test_fbmr_v2_entity_actor.py",
+    "archived": "legacy/tests/test_fbmr_v2_entity_actor.py",
+    "git_blob_sha1": "626fd55677ae51ea0c04cfc1c11722a6280992dd"
+  },
+  {
+    "original": "tests/test_fire_ready_observation.py",
+    "archived": "legacy/tests/test_fire_ready_observation.py",
+    "git_blob_sha1": "c9e1ed894900fc5fba8d16e968eda315e3d5bc63"
+  },
+  {
+    "original": "tests/test_fixed10_deployment_modes.py",
+    "archived": "legacy/tests/test_fixed10_deployment_modes.py",
+    "git_blob_sha1": "181abec81afad5dc87d18de6e547f14cfaa7f2e9"
+  },
+  {
+    "original": "tests/test_fixed10_ppo_stability_audit.py",
+    "archived": "legacy/tests/test_fixed10_ppo_stability_audit.py",
+    "git_blob_sha1": "1484c51da091015cb4255c23f7313c4122744994"
+  },
+  {
+    "original": "tests/test_fixed10_wave_mode_localization.py",
+    "archived": "legacy/tests/test_fixed10_wave_mode_localization.py",
+    "git_blob_sha1": "34b04f509ba863316aa026870f090d2bdca6ddd8"
+  },
+  {
+    "original": "tests/test_fixed10_wave_state_drift.py",
+    "archived": "legacy/tests/test_fixed10_wave_state_drift.py",
+    "git_blob_sha1": "ecc43fc1033eebe5cfb9870b5a4520bd208cc86e"
+  },
+  {
+    "original": "tests/test_flat_ppo_epoch_execution.py",
+    "archived": "legacy/tests/test_flat_ppo_epoch_execution.py",
+    "git_blob_sha1": "a91b80fdf7b99a88b745768fee27dd684724ca36"
+  },
+  {
+    "original": "tests/test_formal_holdout.py",
+    "archived": "legacy/tests/test_formal_holdout.py",
+    "git_blob_sha1": "d71917dd5b1388bdce4caf5a281903224bea8949"
+  },
+  {
+    "original": "tests/test_gated_residual_ea_development_protocol.py",
+    "archived": "legacy/tests/test_gated_residual_ea_development_protocol.py",
+    "git_blob_sha1": "6e71f4861c8e8e10fb4cb0be62020935e4b41ffd"
+  },
+  {
+    "original": "tests/test_gated_residual_entity_actor.py",
+    "archived": "legacy/tests/test_gated_residual_entity_actor.py",
+    "git_blob_sha1": "ad72f2f3b8ffd07f3882852fb4e9d0a15da37372"
+  },
+  {
+    "original": "tests/test_hta_mappo.py",
+    "archived": "legacy/tests/test_hta_mappo.py",
+    "git_blob_sha1": "f3bfbf9320650b93a2465f40c8547df75bb77746"
+  },
+  {
+    "original": "tests/test_hta_worker_consolidation.py",
+    "archived": "legacy/tests/test_hta_worker_consolidation.py",
+    "git_blob_sha1": "d98962a76a212332a42c4fe715d5be2e94501ad3"
+  },
+  {
+    "original": "tests/test_iwsc_mappo.py",
+    "archived": "legacy/tests/test_iwsc_mappo.py",
+    "git_blob_sha1": "d59f2917d4dfaccea5710bb0a4deae56362b30a8"
+  },
+  {
+    "original": "tests/test_jiao2025_core_3m.py",
+    "archived": "legacy/tests/test_jiao2025_core_3m.py",
+    "git_blob_sha1": "fa657f2ffced9e2f5efb8f5ad043a9547e42bb19"
+  },
+  {
+    "original": "tests/test_jiao2025_reproduction.py",
+    "archived": "legacy/tests/test_jiao2025_reproduction.py",
+    "git_blob_sha1": "45f4266ee49c46362f8be8db158e72999c3333f8"
+  },
+  {
+    "original": "tests/test_madsac_formal_protocol.py",
+    "archived": "legacy/tests/test_madsac_formal_protocol.py",
+    "git_blob_sha1": "053913d1cb34faa50d84dabb3197480ca4d0b141"
+  },
+  {
+    "original": "tests/test_mappo_baseline_learnability.py",
+    "archived": "legacy/tests/test_mappo_baseline_learnability.py",
+    "git_blob_sha1": "ddcd8753ee0125ab43e6b64ff12c032325e40967"
+  },
+  {
+    "original": "tests/test_mappo_critic_baseline.py",
+    "archived": "legacy/tests/test_mappo_critic_baseline.py",
+    "git_blob_sha1": "5375ee3af085726bb4cbdc925facfaf4e3358760"
+  },
+  {
+    "original": "tests/test_mappo_fixed_state_bank.py",
+    "archived": "legacy/tests/test_mappo_fixed_state_bank.py",
+    "git_blob_sha1": "12947df06966a6c938c40aea8223514bda7aad3c"
+  },
+  {
+    "original": "tests/test_mappo_horizon_continuation.py",
+    "archived": "legacy/tests/test_mappo_horizon_continuation.py",
+    "git_blob_sha1": "61ff33c2007f9e13ae27b1ee31fe1c16cebb3265"
+  },
+  {
+    "original": "tests/test_mappo_late_lr_continuation.py",
+    "archived": "legacy/tests/test_mappo_late_lr_continuation.py",
+    "git_blob_sha1": "27216e35c121a98617473e2fee820f306c38e147"
+  },
+  {
+    "original": "tests/test_mappo_root_cause_audit.py",
+    "archived": "legacy/tests/test_mappo_root_cause_audit.py",
+    "git_blob_sha1": "1c50935fcc244990b23679e49e0b9c5e2017df85"
+  },
+  {
+    "original": "tests/test_marc_433_root_cause_diagnostic.py",
+    "archived": "legacy/tests/test_marc_433_root_cause_diagnostic.py",
+    "git_blob_sha1": "01c466e3d4d05cf4651b67bec1b39e74d7b4318e"
+  },
+  {
+    "original": "tests/test_marc_deployment_diagnostic.py",
+    "archived": "legacy/tests/test_marc_deployment_diagnostic.py",
+    "git_blob_sha1": "b4919b67064bf425aac1f64c39c0d1a1e5c3000b"
+  },
+  {
+    "original": "tests/test_marc_factorial.py",
+    "archived": "legacy/tests/test_marc_factorial.py",
+    "git_blob_sha1": "4853aad35163aa8e362212cf036bc6cec2303aa7"
+  },
+  {
+    "original": "tests/test_marc_mappo.py",
+    "archived": "legacy/tests/test_marc_mappo.py",
+    "git_blob_sha1": "ae35642b7d979be4bd5653128ae1a5455c624efd"
+  },
+  {
+    "original": "tests/test_marc_mappo_v2.py",
+    "archived": "legacy/tests/test_marc_mappo_v2.py",
+    "git_blob_sha1": "d46b1098fe50a26608637a63f9cc8abd7e86fe3d"
+  },
+  {
+    "original": "tests/test_marc_state_memory.py",
+    "archived": "legacy/tests/test_marc_state_memory.py",
+    "git_blob_sha1": "b99206ac0f5c05b9cbbb5e33ce552c83925aa6d5"
+  },
+  {
+    "original": "tests/test_marc_wsgru_screen.py",
+    "archived": "legacy/tests/test_marc_wsgru_screen.py",
+    "git_blob_sha1": "e11ec0c8c27a418289e11b2ec8368adbd18e1030"
+  },
+  {
+    "original": "tests/test_mission_aware_film.py",
+    "archived": "legacy/tests/test_mission_aware_film.py",
+    "git_blob_sha1": "9996332ae351d379f0e0797294d27a4c6d7d8996"
+  },
+  {
+    "original": "tests/test_mission_aware_film_kl_guard.py",
+    "archived": "legacy/tests/test_mission_aware_film_kl_guard.py",
+    "git_blob_sha1": "6ece0ed9d502097abbeba59c19bb3c3cc6059aef"
+  },
+  {
+    "original": "tests/test_modular_cli_spawn_imports.py",
+    "archived": "legacy/tests/test_modular_cli_spawn_imports.py",
+    "git_blob_sha1": "ab7270407c5b37f44df40b345f85068da28be845"
+  },
+  {
+    "original": "tests/test_modular_formal_protocol.py",
+    "archived": "legacy/tests/test_modular_formal_protocol.py",
+    "git_blob_sha1": "159b83769f42773b1515b168141c9f533ad8a01c"
+  },
+  {
+    "original": "tests/test_modular_mappo.py",
+    "archived": "legacy/tests/test_modular_mappo.py",
+    "git_blob_sha1": "0b431908382c3d59d185975fbf66bbb4a35b098d"
+  },
+  {
+    "original": "tests/test_modular_modules.py",
+    "archived": "legacy/tests/test_modular_modules.py",
+    "git_blob_sha1": "5cba4818ea1361ae8091124a7a9d196ec87bba4b"
+  },
+  {
+    "original": "tests/test_modular_screening_tool.py",
+    "archived": "legacy/tests/test_modular_screening_tool.py",
+    "git_blob_sha1": "fa3c504bebaa69c68d1742d7c1b56fc5430eca19"
+  },
+  {
+    "original": "tests/test_multiseed_confirmation.py",
+    "archived": "legacy/tests/test_multiseed_confirmation.py",
+    "git_blob_sha1": "66f7d046a37d32fa685c72e7582172d7c9028e39"
+  },
+  {
+    "original": "tests/test_next_stage_screening.py",
+    "archived": "legacy/tests/test_next_stage_screening.py",
+    "git_blob_sha1": "eb78bc043306e36b2d75c72bb5851ffbf2aefe50"
+  },
+  {
+    "original": "tests/test_partial_sharing_evidence.py",
+    "archived": "legacy/tests/test_partial_sharing_evidence.py",
+    "git_blob_sha1": "10a9b81326cf4aadffb94454eb5f7566329c0ad0"
+  },
+  {
+    "original": "tests/test_persistent_wave_blue_force_size.py",
+    "archived": "legacy/tests/test_persistent_wave_blue_force_size.py",
+    "git_blob_sha1": "a40eaa20611a669af74ab4cfd830b78fd5d1d9b5"
+  },
+  {
+    "original": "tests/test_persistent_wave_environment.py",
+    "archived": "legacy/tests/test_persistent_wave_environment.py",
+    "git_blob_sha1": "d0845f78b9d6ff735c2c157f8b108d8c17320dff"
+  },
+  {
+    "original": "tests/test_persistent_wave_v2.py",
+    "archived": "legacy/tests/test_persistent_wave_v2.py",
+    "git_blob_sha1": "a0047933f346f5c90d6891851fc4fe5edb725223"
+  },
+  {
+    "original": "tests/test_plain_deployment_gap_audit.py",
+    "archived": "legacy/tests/test_plain_deployment_gap_audit.py",
+    "git_blob_sha1": "748a0ee430fed1037d0a9d341e18782668af47a1"
+  },
+  {
+    "original": "tests/test_plain_transition_mechanism.py",
+    "archived": "legacy/tests/test_plain_transition_mechanism.py",
+    "git_blob_sha1": "fdaaa309a4d7f76c6a90d0e0bc7a66c1b8235d25"
+  },
+  {
+    "original": "tests/test_policy_deployment_modes.py",
+    "archived": "legacy/tests/test_policy_deployment_modes.py",
+    "git_blob_sha1": "76ce959df363b238df4568426b846072c31854e1"
+  },
+  {
+    "original": "tests/test_pwtr_actor_critic_decomposition.py",
+    "archived": "legacy/tests/test_pwtr_actor_critic_decomposition.py",
+    "git_blob_sha1": "41242641aaa05b352b03a0c03b0a02cc659243d4"
+  },
+  {
+    "original": "tests/test_pwtr_mappo.py",
+    "archived": "legacy/tests/test_pwtr_mappo.py",
+    "git_blob_sha1": "ac43d7df7fc14cf797eb54849b98c19d9ba93330"
+  },
+  {
+    "original": "tests/test_rv_mappo.py",
+    "archived": "legacy/tests/test_rv_mappo.py",
+    "git_blob_sha1": "755ff30d3580190af9106666991d5742b6166ea5"
+  },
+  {
+    "original": "tests/test_single_wave_stability_diagnostic.py",
+    "archived": "legacy/tests/test_single_wave_stability_diagnostic.py",
+    "git_blob_sha1": "f1514057311a568da5871167e8dae9a777a7ebb1"
+  },
+  {
+    "original": "tests/test_swgp_mappo.py",
+    "archived": "legacy/tests/test_swgp_mappo.py",
+    "git_blob_sha1": "e39a0546b63bc120ca76dd167113bb3b29b52dc6"
+  },
+  {
+    "original": "tests/test_team_mean_credit.py",
+    "archived": "legacy/tests/test_team_mean_credit.py",
+    "git_blob_sha1": "4ffe603eb51b25c91c16b5965cfdf923bc02bac9"
+  },
+  {
+    "original": "tests/test_trajectory_tools.py",
+    "archived": "legacy/tests/test_trajectory_tools.py",
+    "git_blob_sha1": "b3372ce6659016423106f042fbcc20f9d67bd266"
+  },
+  {
+    "original": "tests/test_w1sg_mappo.py",
+    "archived": "legacy/tests/test_w1sg_mappo.py",
+    "git_blob_sha1": "0b1834989d7284cdb8326600fc2eb3c7ec7c6266"
+  },
+  {
+    "original": "tests/test_wave_balanced_curriculum_protocol.py",
+    "archived": "legacy/tests/test_wave_balanced_curriculum_protocol.py",
+    "git_blob_sha1": "231bcae0ed4568f64be6ec108e159f607b763a10"
+  },
+  {
+    "original": "tests/test_wave_entry_curriculum.py",
+    "archived": "legacy/tests/test_wave_entry_curriculum.py",
+    "git_blob_sha1": "423282eb88bd2dc59dd04a69917e050c299df4a3"
+  },
+  {
+    "original": "tests/test_wave_gradient_conflict_audit.py",
+    "archived": "legacy/tests/test_wave_gradient_conflict_audit.py",
+    "git_blob_sha1": "503be943f2bb49d49def245c97886de4b117bd51"
+  },
+  {
+    "original": "tests/test_ws_pbrs.py",
+    "archived": "legacy/tests/test_ws_pbrs.py",
+    "git_blob_sha1": "3ced7891333eb763e6855d5f6a32f96cc13642e2"
+  },
+  {
+    "original": "tests/test_wsai_mappo.py",
+    "archived": "legacy/tests/test_wsai_mappo.py",
+    "git_blob_sha1": "d97eb7efe8eb7b04753bed286710d287618a8d36"
+  },
+  {
+    "original": "tests/test_wsmh_mappo.py",
+    "archived": "legacy/tests/test_wsmh_mappo.py",
+    "git_blob_sha1": "c0779c1c05a1fdecdd27a675fa09a0d0442e28e5"
+  },
+  {
+    "original": "tools/aggregate_holdout_results.py",
+    "archived": "legacy/tools/aggregate_holdout_results.py",
+    "git_blob_sha1": "1e46263450ff85edab2402bf61626faca509988a"
+  },
+  {
+    "original": "tools/aggregate_training_runs.py",
+    "archived": "legacy/tools/aggregate_training_runs.py",
+    "git_blob_sha1": "e3afa9bf062039e13937d96955c1d55ce31ea7f2"
+  },
+  {
+    "original": "tools/analyze_actor_grad_clip_300k.py",
+    "archived": "legacy/tools/analyze_actor_grad_clip_300k.py",
+    "git_blob_sha1": "a42489d61cb67b339a9d799863235efe19d15160"
+  },
+  {
+    "original": "tools/analyze_actor_grad_clip_fixed10_300k.py",
+    "archived": "legacy/tools/analyze_actor_grad_clip_fixed10_300k.py",
+    "git_blob_sha1": "045db1f20dd4e2d7ad965e0b0fd621a953cad8c6"
+  },
+  {
+    "original": "tools/analyze_actor_mission_context.py",
+    "archived": "legacy/tools/analyze_actor_mission_context.py",
+    "git_blob_sha1": "9c2cf20db07873c0fdf4610f624d30f14627c66f"
+  },
+  {
+    "original": "tools/analyze_actor_only_gru_history.py",
+    "archived": "legacy/tools/analyze_actor_only_gru_history.py",
+    "git_blob_sha1": "a4cbbe45c33bdfe2b775cbd42a5145fc115d7fb1"
+  },
+  {
+    "original": "tools/analyze_brsc_mappo.py",
+    "archived": "legacy/tools/analyze_brsc_mappo.py",
+    "git_blob_sha1": "2a0855350de5bb9b915c2f43240c419f0fd24251"
+  },
+  {
+    "original": "tools/analyze_caiw_mappo.py",
+    "archived": "legacy/tools/analyze_caiw_mappo.py",
+    "git_blob_sha1": "330db91dec6e4617891e05044fbe4dd1d56b3841"
+  },
+  {
+    "original": "tools/analyze_dawe_fixed10_300k.py",
+    "archived": "legacy/tools/analyze_dawe_fixed10_300k.py",
+    "git_blob_sha1": "2b40f3cecd3e32d6ffb4fd3a59d7f7344956bd3d"
+  },
+  {
+    "original": "tools/analyze_fire_ready_plain.py",
+    "archived": "legacy/tools/analyze_fire_ready_plain.py",
+    "git_blob_sha1": "86e636828e274e7e631c81cde99648322364211e"
+  },
+  {
+    "original": "tools/analyze_hta_mappo.py",
+    "archived": "legacy/tools/analyze_hta_mappo.py",
+    "git_blob_sha1": "7436aef74db7d42de5de35290ba3cf98ecad2563"
+  },
+  {
+    "original": "tools/analyze_hta_mappo_v2.py",
+    "archived": "legacy/tools/analyze_hta_mappo_v2.py",
+    "git_blob_sha1": "767363aeabe83407c2f7d4d80a9597f55292ad68"
+  },
+  {
+    "original": "tools/analyze_iwsc_mappo.py",
+    "archived": "legacy/tools/analyze_iwsc_mappo.py",
+    "git_blob_sha1": "ae8b5aa3bc3d12ebf346bd7718ed7ad0554de019"
+  },
+  {
+    "original": "tools/analyze_jiao2025_reproduction.py",
+    "archived": "legacy/tools/analyze_jiao2025_reproduction.py",
+    "git_blob_sha1": "ebde0afb09d052098aabd245b1af4c80082c7fa2"
+  },
+  {
+    "original": "tools/analyze_mappo_baseline_learnability.py",
+    "archived": "legacy/tools/analyze_mappo_baseline_learnability.py",
+    "git_blob_sha1": "7783cfacab13237852eb79d39c96e6288c92f977"
+  },
+  {
+    "original": "tools/analyze_mappo_critic_baseline_1p5m.py",
+    "archived": "legacy/tools/analyze_mappo_critic_baseline_1p5m.py",
+    "git_blob_sha1": "69dcc82f027c21f50435d8789e9bf3f456efb4c5"
+  },
+  {
+    "original": "tools/analyze_mappo_late_lr_continuation.py",
+    "archived": "legacy/tools/analyze_mappo_late_lr_continuation.py",
+    "git_blob_sha1": "49573880e2500de7a1e6aed2e327ce21129801fc"
+  },
+  {
+    "original": "tools/analyze_marc_433_root_cause.py",
+    "archived": "legacy/tools/analyze_marc_433_root_cause.py",
+    "git_blob_sha1": "9f2da46c60f5c2d367c4d629480d3acdd31ba224"
+  },
+  {
+    "original": "tools/analyze_mission_aware_film.py",
+    "archived": "legacy/tools/analyze_mission_aware_film.py",
+    "git_blob_sha1": "6b7dc1d6d989b8aa4419367b49645b3abf6f0b83"
+  },
+  {
+    "original": "tools/analyze_mission_aware_film_deep.py",
+    "archived": "legacy/tools/analyze_mission_aware_film_deep.py",
+    "git_blob_sha1": "fd2d7d91c67826c49eb79006a63bd69b63371d07"
+  },
+  {
+    "original": "tools/analyze_mission_aware_film_kl_guard.py",
+    "archived": "legacy/tools/analyze_mission_aware_film_kl_guard.py",
+    "git_blob_sha1": "67e3fc528c0c0beec85f093a06343d152dab7245"
+  },
+  {
+    "original": "tools/analyze_multiseed_confirmation.py",
+    "archived": "legacy/tools/analyze_multiseed_confirmation.py",
+    "git_blob_sha1": "64f6549d2dc40d3f451fae57a472e72733ed6d78"
+  },
+  {
+    "original": "tools/analyze_next_stage_screening.py",
+    "archived": "legacy/tools/analyze_next_stage_screening.py",
+    "git_blob_sha1": "dc66c2d8137dbb3d7e0baf032ddea165b3c10798"
+  },
+  {
+    "original": "tools/analyze_partial_sharing_evidence.py",
+    "archived": "legacy/tools/analyze_partial_sharing_evidence.py",
+    "git_blob_sha1": "e62b2114fc5ec4067646799da7f6f42120aad486"
+  },
+  {
+    "original": "tools/analyze_plain_transition_mechanism.py",
+    "archived": "legacy/tools/analyze_plain_transition_mechanism.py",
+    "git_blob_sha1": "89ad1a85210b2aa3727ae325e82bccf305fbbe86"
+  },
+  {
+    "original": "tools/analyze_pwtr_ablation.py",
+    "archived": "legacy/tools/analyze_pwtr_ablation.py",
+    "git_blob_sha1": "64a26f679ab3da0e905723968e24cb2b3d0c384f"
+  },
+  {
+    "original": "tools/analyze_pwtr_actor_critic_decomposition.py",
+    "archived": "legacy/tools/analyze_pwtr_actor_critic_decomposition.py",
+    "git_blob_sha1": "ac1f2cec836ef8279e91c5cf28409f9cd81800c1"
+  },
+  {
+    "original": "tools/analyze_rv_fixed10_300k.py",
+    "archived": "legacy/tools/analyze_rv_fixed10_300k.py",
+    "git_blob_sha1": "fce7a60a3c1cb07995bc893183047fe5b25eda4e"
+  },
+  {
+    "original": "tools/analyze_single_wave_stability_root_cause.py",
+    "archived": "legacy/tools/analyze_single_wave_stability_root_cause.py",
+    "git_blob_sha1": "29c409e5a47eba040af1619e3ae2e381d2977e36"
+  },
+  {
+    "original": "tools/analyze_team_credit_screen.py",
+    "archived": "legacy/tools/analyze_team_credit_screen.py",
+    "git_blob_sha1": "a18a6cbff6a6ed786a651c84bee0442618f5d13c"
+  },
+  {
+    "original": "tools/analyze_three_seed_study.py",
+    "archived": "legacy/tools/analyze_three_seed_study.py",
+    "git_blob_sha1": "8b0c482a8a66e321d850a6650863da0f9a514d0a"
+  },
+  {
+    "original": "tools/analyze_w1sg_300k.py",
+    "archived": "legacy/tools/analyze_w1sg_300k.py",
+    "git_blob_sha1": "82373c20f51529bc7408b0ce576e89602c299b37"
+  },
+  {
+    "original": "tools/analyze_wsai_300k.py",
+    "archived": "legacy/tools/analyze_wsai_300k.py",
+    "git_blob_sha1": "b12056543d2fbc33c01f4e7ff1bd565a0e256a74"
+  },
+  {
+    "original": "tools/analyze_wsmh_300k.py",
+    "archived": "legacy/tools/analyze_wsmh_300k.py",
+    "git_blob_sha1": "5f7ad7fc6fb4717d1e4c8e9e5eb267f124c2e68c"
+  },
+  {
+    "original": "tools/audit_clipping_geometry.py",
+    "archived": "legacy/tools/audit_clipping_geometry.py",
+    "git_blob_sha1": "22f3bca3bc9d03e8e82664ca71abcbfb99951b89"
+  },
+  {
+    "original": "tools/audit_comprehensive_persistent_wave.py",
+    "archived": "legacy/tools/audit_comprehensive_persistent_wave.py",
+    "git_blob_sha1": "fa605c4f7616375dbfcbd40ed2436b18cbc0ec3c"
+  },
+  {
+    "original": "tools/audit_dawe_fixed_bank_kl_decomposition.py",
+    "archived": "legacy/tools/audit_dawe_fixed_bank_kl_decomposition.py",
+    "git_blob_sha1": "1b491b29cbdbdf41ab6f637526e6d9471a6f4306"
+  },
+  {
+    "original": "tools/audit_fixed10_deployment_modes.py",
+    "archived": "legacy/tools/audit_fixed10_deployment_modes.py",
+    "git_blob_sha1": "4ffabd590f8ecf85fcff0747c145778a67005535"
+  },
+  {
+    "original": "tools/audit_fixed10_ppo_stability.py",
+    "archived": "legacy/tools/audit_fixed10_ppo_stability.py",
+    "git_blob_sha1": "5a58b3380ad9d5b20978f0f7ce3f1ca3fc58332d"
+  },
+  {
+    "original": "tools/audit_fixed10_wave_mode_localization.py",
+    "archived": "legacy/tools/audit_fixed10_wave_mode_localization.py",
+    "git_blob_sha1": "818f494009de42492100f18cc796835ecd88b7a3"
+  },
+  {
+    "original": "tools/audit_fixed10_wave_state_drift.py",
+    "archived": "legacy/tools/audit_fixed10_wave_state_drift.py",
+    "git_blob_sha1": "309ea14b0f04a87afa2088ae8b9644583ec3a659"
+  },
+  {
+    "original": "tools/audit_mappo_root_cause.py",
+    "archived": "legacy/tools/audit_mappo_root_cause.py",
+    "git_blob_sha1": "513aec895ca50c9e7f49da569d09f1c6c3485580"
+  },
+  {
+    "original": "tools/audit_mappo_run.py",
+    "archived": "legacy/tools/audit_mappo_run.py",
+    "git_blob_sha1": "6a2ebbb85e7fbd139dd4be8533c6768f717e5e81"
+  },
+  {
+    "original": "tools/audit_persistent_mission_v3.py",
+    "archived": "legacy/tools/audit_persistent_mission_v3.py",
+    "git_blob_sha1": "fad4e37ed918bff3381c5fbbdd04c9e4977a011b"
+  },
+  {
+    "original": "tools/audit_persistent_wave_behavior.py",
+    "archived": "legacy/tools/audit_persistent_wave_behavior.py",
+    "git_blob_sha1": "d6920c730bf8b660b2e5aac06ad5d2d0de3db4d5"
+  },
+  {
+    "original": "tools/audit_plain_deployment_gap.py",
+    "archived": "legacy/tools/audit_plain_deployment_gap.py",
+    "git_blob_sha1": "e7cf0317a88c7b87fda554e9e3096bce127fce5f"
+  },
+  {
+    "original": "tools/audit_single_wave_checkpoint_trajectories.py",
+    "archived": "legacy/tools/audit_single_wave_checkpoint_trajectories.py",
+    "git_blob_sha1": "2c7e66c057b398d040ace2453c4b337551adff1f"
+  },
+  {
+    "original": "tools/audit_single_wave_env_reward_stability.py",
+    "archived": "legacy/tools/audit_single_wave_env_reward_stability.py",
+    "git_blob_sha1": "ce27ace8c242e304191484e5353adf84462f697d"
+  },
+  {
+    "original": "tools/audit_v2_2_core.py",
+    "archived": "legacy/tools/audit_v2_2_core.py",
+    "git_blob_sha1": "7a9af2f82856661f138d7ec98dcb0d70b7bf56eb"
+  },
+  {
+    "original": "tools/audit_wave_gradient_conflict.py",
+    "archived": "legacy/tools/audit_wave_gradient_conflict.py",
+    "git_blob_sha1": "b9778453d34e9540640defefaeb66ca1bf890a0e"
+  },
+  {
+    "original": "tools/benchmark_modular_mappo.py",
+    "archived": "legacy/tools/benchmark_modular_mappo.py",
+    "git_blob_sha1": "cd784f3de51624323a51436e8ce96f86f6a65c8a"
+  },
+  {
+    "original": "tools/check_parallel_env.py",
+    "archived": "legacy/tools/check_parallel_env.py",
+    "git_blob_sha1": "a2e19b508a6a9f0af76525f623a72d97fda480b6"
+  },
+  {
+    "original": "tools/collect_fixed10_natural_wave_entries.py",
+    "archived": "legacy/tools/collect_fixed10_natural_wave_entries.py",
+    "git_blob_sha1": "d67ef22bff089fccfb414c8631f5145e141d6771"
+  },
+  {
+    "original": "tools/combat_visualization.py",
+    "archived": "legacy/tools/combat_visualization.py",
+    "git_blob_sha1": "7420fb4272b4d941804081e077450750582f00a0"
+  },
+  {
+    "original": "tools/compare_same_gamma_runs.py",
+    "archived": "legacy/tools/compare_same_gamma_runs.py",
+    "git_blob_sha1": "1df5e549669c777bd804a1a0713194e1e2bcae72"
+  },
+  {
+    "original": "tools/diagnose_mappo_fixed_state_bank.py",
+    "archived": "legacy/tools/diagnose_mappo_fixed_state_bank.py",
+    "git_blob_sha1": "b6642d9f674276765717cd80cd16060211020874"
+  },
+  {
+    "original": "tools/diagnose_marc_deployment_policy.py",
+    "archived": "legacy/tools/diagnose_marc_deployment_policy.py",
+    "git_blob_sha1": "baf07c97e42af358ecce3cd60cbe0155dacf2a05"
+  },
+  {
+    "original": "tools/diagnose_policy_deployment_modes.py",
+    "archived": "legacy/tools/diagnose_policy_deployment_modes.py",
+    "git_blob_sha1": "96f7fa07b7b3642175b76a406d78342a12839c2c"
+  },
+  {
+    "original": "tools/diagnose_spawn_constraint_ablation.py",
+    "archived": "legacy/tools/diagnose_spawn_constraint_ablation.py",
+    "git_blob_sha1": "66bea4dc9f52430cbf4bca95368cf651b0fc706a"
+  },
+  {
+    "original": "tools/evaluate_blue_wave_size_sensitivity.py",
+    "archived": "legacy/tools/evaluate_blue_wave_size_sensitivity.py",
+    "git_blob_sha1": "4c5e9105110cbdf220194712cb3a3282d608f2b7"
+  },
+  {
+    "original": "tools/evaluate_policy_matrix.py",
+    "archived": "legacy/tools/evaluate_policy_matrix.py",
+    "git_blob_sha1": "d9cf6763d25d7d9c548b3fe38fc2865417f86dbb"
+  },
+  {
+    "original": "tools/fixed10_wave_state_drift_common.py",
+    "archived": "legacy/tools/fixed10_wave_state_drift_common.py",
+    "git_blob_sha1": "99bc2cf5ce2d84bfa7502a2af0104cdbacee96a9"
+  },
+  {
+    "original": "tools/modular_1p5m_screening.py",
+    "archived": "legacy/tools/modular_1p5m_screening.py",
+    "git_blob_sha1": "886a44ee1e2337f0c797fbdd60cff0f03b0030fc"
+  },
+  {
+    "original": "tools/plain_transition_diagnostic_common.py",
+    "archived": "legacy/tools/plain_transition_diagnostic_common.py",
+    "git_blob_sha1": "ea61b521cf8bcfa93fb85d6eab08cfbfb1567711"
+  },
+  {
+    "original": "tools/plot_best_model_trajectories.py",
+    "archived": "legacy/tools/plot_best_model_trajectories.py",
+    "git_blob_sha1": "5b0a460b2e70f6ce591782423749aac1fdcb3824"
+  },
+  {
+    "original": "tools/plot_persistent_wave_audit.py",
+    "archived": "legacy/tools/plot_persistent_wave_audit.py",
+    "git_blob_sha1": "2eaf87b8131be55b9375bcef00c926032dbb58ec"
+  },
+  {
+    "original": "tools/plot_three_seed_training_study.py",
+    "archived": "legacy/tools/plot_three_seed_training_study.py",
+    "git_blob_sha1": "0fbac0216a8497a5213091174bc185b2b43eec76"
+  },
+  {
+    "original": "tools/preflight_actor_grad_clip_300k.py",
+    "archived": "legacy/tools/preflight_actor_grad_clip_300k.py",
+    "git_blob_sha1": "7be3ed7599b397c469998de8735b8dcc5ed92de2"
+  },
+  {
+    "original": "tools/preflight_actor_grad_clip_fixed10_300k.py",
+    "archived": "legacy/tools/preflight_actor_grad_clip_fixed10_300k.py",
+    "git_blob_sha1": "ce5b3d9ddfae179dd8469916f7e077b5dfd13770"
+  },
+  {
+    "original": "tools/preflight_actor_mission_context.py",
+    "archived": "legacy/tools/preflight_actor_mission_context.py",
+    "git_blob_sha1": "b0f0ee617e8cf53bd1a7d67cfb453a74db01aacc"
+  },
+  {
+    "original": "tools/preflight_actor_only_gru_history.py",
+    "archived": "legacy/tools/preflight_actor_only_gru_history.py",
+    "git_blob_sha1": "fc491b2f84bcb1343be12c6026726ca98097443c"
+  },
+  {
+    "original": "tools/preflight_brsc_mappo.py",
+    "archived": "legacy/tools/preflight_brsc_mappo.py",
+    "git_blob_sha1": "bdb0efd848e013353801531ced49526de98f0af5"
+  },
+  {
+    "original": "tools/preflight_caiw_mappo.py",
+    "archived": "legacy/tools/preflight_caiw_mappo.py",
+    "git_blob_sha1": "56c00de374ebaf92a23bbe110ed300118d690edf"
+  },
+  {
+    "original": "tools/preflight_critic_mission_context_factorial.py",
+    "archived": "legacy/tools/preflight_critic_mission_context_factorial.py",
+    "git_blob_sha1": "aa2a871e8ab332e324010ebd0c9858ed6d267be6"
+  },
+  {
+    "original": "tools/preflight_dawe_fixed10_300k.py",
+    "archived": "legacy/tools/preflight_dawe_fixed10_300k.py",
+    "git_blob_sha1": "c3b9ac1f011bb470861318d09d922451da6cd767"
+  },
+  {
+    "original": "tools/preflight_delayed_swgp_mappo.py",
+    "archived": "legacy/tools/preflight_delayed_swgp_mappo.py",
+    "git_blob_sha1": "fc75d41fa169096e58f8b3efa4a83e3c14c873bf"
+  },
+  {
+    "original": "tools/preflight_eawb_formal_multiseed.py",
+    "archived": "legacy/tools/preflight_eawb_formal_multiseed.py",
+    "git_blob_sha1": "dfb9bfa240a099922d9d3245e3997fb9740b2424"
+  },
+  {
+    "original": "tools/preflight_fbmr_stage2_development.py",
+    "archived": "legacy/tools/preflight_fbmr_stage2_development.py",
+    "git_blob_sha1": "c9bcedd6b4dd4972adb17fbee706f0a031e800d1"
+  },
+  {
+    "original": "tools/preflight_fbmr_v2_development.py",
+    "archived": "legacy/tools/preflight_fbmr_v2_development.py",
+    "git_blob_sha1": "3a4e7c731e3e8f628efbb804398f8a897cb9151b"
+  },
+  {
+    "original": "tools/preflight_fire_ready_plain.py",
+    "archived": "legacy/tools/preflight_fire_ready_plain.py",
+    "git_blob_sha1": "27da6aa0c767e2665044bc76da0084c89cd10c1d"
+  },
+  {
+    "original": "tools/preflight_fixed10_wave_state_drift.py",
+    "archived": "legacy/tools/preflight_fixed10_wave_state_drift.py",
+    "git_blob_sha1": "5294f0e19a379830406c5cf9a146a1ca502c82f5"
+  },
+  {
+    "original": "tools/preflight_gated_residual_ea_development.py",
+    "archived": "legacy/tools/preflight_gated_residual_ea_development.py",
+    "git_blob_sha1": "eb1611c4776d4155912c366c8a681cea0b47ded0"
+  },
+  {
+    "original": "tools/preflight_hta_mappo.py",
+    "archived": "legacy/tools/preflight_hta_mappo.py",
+    "git_blob_sha1": "9235894b0b257f1c55c4ec42d0868656b6c5d1ed"
+  },
+  {
+    "original": "tools/preflight_hta_mappo_v2.py",
+    "archived": "legacy/tools/preflight_hta_mappo_v2.py",
+    "git_blob_sha1": "ab8118956d0fd0d590b3eeea94ce95021b6c83d1"
+  },
+  {
+    "original": "tools/preflight_iwsc_mappo.py",
+    "archived": "legacy/tools/preflight_iwsc_mappo.py",
+    "git_blob_sha1": "2f326cec525bbea91d5a12b8eb9175823d211563"
+  },
+  {
+    "original": "tools/preflight_jiao2025_core_3m.py",
+    "archived": "legacy/tools/preflight_jiao2025_core_3m.py",
+    "git_blob_sha1": "e15676274a1e28efeb56538f6acc50e8b4529621"
+  },
+  {
+    "original": "tools/preflight_mappo_baseline_learnability.py",
+    "archived": "legacy/tools/preflight_mappo_baseline_learnability.py",
+    "git_blob_sha1": "fd54fefd94326c5130c2fab9d75560192b2c3fb4"
+  },
+  {
+    "original": "tools/preflight_mappo_critic_baseline_1p5m.py",
+    "archived": "legacy/tools/preflight_mappo_critic_baseline_1p5m.py",
+    "git_blob_sha1": "670820c9795410d35c0b59f53cd0f51767f59e81"
+  },
+  {
+    "original": "tools/preflight_mappo_fixed_state_bank.py",
+    "archived": "legacy/tools/preflight_mappo_fixed_state_bank.py",
+    "git_blob_sha1": "528a8f3eee10d0473b5b71cd9b32fb1109d9b7dc"
+  },
+  {
+    "original": "tools/preflight_mappo_horizon_continuation.py",
+    "archived": "legacy/tools/preflight_mappo_horizon_continuation.py",
+    "git_blob_sha1": "5cc439d5ae6ff9d501a4fd8b793e42288d4a1ba8"
+  },
+  {
+    "original": "tools/preflight_mappo_late_lr_continuation.py",
+    "archived": "legacy/tools/preflight_mappo_late_lr_continuation.py",
+    "git_blob_sha1": "0d1e8ffcad3c4ae3e126ce4a7d2faf1bd55df375"
+  },
+  {
+    "original": "tools/preflight_marc_factorial.py",
+    "archived": "legacy/tools/preflight_marc_factorial.py",
+    "git_blob_sha1": "9bb1ee8abce059872202d06b4477e6fa1cdea3eb"
+  },
+  {
+    "original": "tools/preflight_marc_mappo.py",
+    "archived": "legacy/tools/preflight_marc_mappo.py",
+    "git_blob_sha1": "2a665f5bf615816b765705cddc8e70c4eeb8fae9"
+  },
+  {
+    "original": "tools/preflight_marc_mappo_v2.py",
+    "archived": "legacy/tools/preflight_marc_mappo_v2.py",
+    "git_blob_sha1": "7f70d727af115514d9c8d3f80f41478c17082e1a"
+  },
+  {
+    "original": "tools/preflight_marc_state_memory.py",
+    "archived": "legacy/tools/preflight_marc_state_memory.py",
+    "git_blob_sha1": "bb5b206a6ce6efb175213023c68dd874c8dcfba4"
+  },
+  {
+    "original": "tools/preflight_marc_wsgru_screen.py",
+    "archived": "legacy/tools/preflight_marc_wsgru_screen.py",
+    "git_blob_sha1": "def63bcbd3caf9e7f7969dff8993b58bbfcbb41b"
+  },
+  {
+    "original": "tools/preflight_mission_aware_film.py",
+    "archived": "legacy/tools/preflight_mission_aware_film.py",
+    "git_blob_sha1": "a44e46ffc30c53f176ab07343c4b5c3556b99f66"
+  },
+  {
+    "original": "tools/preflight_mission_aware_film_kl_guard.py",
+    "archived": "legacy/tools/preflight_mission_aware_film_kl_guard.py",
+    "git_blob_sha1": "d7b510c935a1e5d1faeaf94321920d27f7be68dd"
+  },
+  {
+    "original": "tools/preflight_plain_transition_mechanism.py",
+    "archived": "legacy/tools/preflight_plain_transition_mechanism.py",
+    "git_blob_sha1": "90dc861460ccf0838b48af95ca35e52810a2bf34"
+  },
+  {
+    "original": "tools/preflight_pwtr_ablation.py",
+    "archived": "legacy/tools/preflight_pwtr_ablation.py",
+    "git_blob_sha1": "a3042115a0cdec938e98231be29d53ac69368b73"
+  },
+  {
+    "original": "tools/preflight_pwtr_actor_critic_decomposition.py",
+    "archived": "legacy/tools/preflight_pwtr_actor_critic_decomposition.py",
+    "git_blob_sha1": "8a362e9ff821b8ab2f89b56d5ecd320e1b489bfc"
+  },
+  {
+    "original": "tools/preflight_rv_fixed10_300k.py",
+    "archived": "legacy/tools/preflight_rv_fixed10_300k.py",
+    "git_blob_sha1": "76e62049e68ae740ae34d1b6bda9f60566253a2d"
+  },
+  {
+    "original": "tools/preflight_single_wave_stability_diagnostic.py",
+    "archived": "legacy/tools/preflight_single_wave_stability_diagnostic.py",
+    "git_blob_sha1": "a725f3a1e8730b6f107cf90406143ea69d0451f1"
+  },
+  {
+    "original": "tools/preflight_swgp_mappo.py",
+    "archived": "legacy/tools/preflight_swgp_mappo.py",
+    "git_blob_sha1": "c89aa22d538e6fc8d79a27569701d90c90c9a344"
+  },
+  {
+    "original": "tools/preflight_team_credit_screen.py",
+    "archived": "legacy/tools/preflight_team_credit_screen.py",
+    "git_blob_sha1": "51eaae3eff9e2022163c8129646f3241e88bb634"
+  },
+  {
+    "original": "tools/preflight_w1sg_300k.py",
+    "archived": "legacy/tools/preflight_w1sg_300k.py",
+    "git_blob_sha1": "cadb2636ad72cb3d02b955c25518aa82f6e4a30f"
+  },
+  {
+    "original": "tools/preflight_wave_balanced_curriculum.py",
+    "archived": "legacy/tools/preflight_wave_balanced_curriculum.py",
+    "git_blob_sha1": "0fad2fd5d92564c1f5f3e11f5a11f907d2db0d64"
+  },
+  {
+    "original": "tools/preflight_ws_pbrs_development.py",
+    "archived": "legacy/tools/preflight_ws_pbrs_development.py",
+    "git_blob_sha1": "4e555eb3e2ffe59b1c969ca1f7bdc9003ba80f3f"
+  },
+  {
+    "original": "tools/preflight_wsai_300k.py",
+    "archived": "legacy/tools/preflight_wsai_300k.py",
+    "git_blob_sha1": "044a55180b514e278dfc3880f2bbae130b880264"
+  },
+  {
+    "original": "tools/preflight_wsmh_300k.py",
+    "archived": "legacy/tools/preflight_wsmh_300k.py",
+    "git_blob_sha1": "5e6c5882e84399639b9b6a7e5d9e6235b1949176"
+  },
+  {
+    "original": "tools/prepare_formal_holdout.py",
+    "archived": "legacy/tools/prepare_formal_holdout.py",
+    "git_blob_sha1": "ddd265e0d2b8f4c63e6c4ea4522eb502731a5606"
+  },
+  {
+    "original": "tools/prepare_jiao2025_screening.py",
+    "archived": "legacy/tools/prepare_jiao2025_screening.py",
+    "git_blob_sha1": "2e27136ac28ce67cc1fbd52ffa6cb658bb856095"
+  },
+  {
+    "original": "tools/record_combat_episode.py",
+    "archived": "legacy/tools/record_combat_episode.py",
+    "git_blob_sha1": "a064284d30c02235cdb42994bafebb72167cc163"
+  },
+  {
+    "original": "tools/render_combat_episode.py",
+    "archived": "legacy/tools/render_combat_episode.py",
+    "git_blob_sha1": "b49aba84e84cc02f1cfe28b7463b380f48cf470f"
+  },
+  {
+    "original": "tools/render_combat_episode_interactive.py",
+    "archived": "legacy/tools/render_combat_episode_interactive.py",
+    "git_blob_sha1": "60705e95a1f349f4e971b0e0e599ffd68b7c6cc0"
+  },
+  {
+    "original": "tools/replay_fixed10_cross_entries.py",
+    "archived": "legacy/tools/replay_fixed10_cross_entries.py",
+    "git_blob_sha1": "74cef1b7dce1c3c163c2ebe14833e2f4cdcc8181"
+  },
+  {
+    "original": "tools/run_actor_grad_clip_300k.sh",
+    "archived": "legacy/tools/run_actor_grad_clip_300k.sh",
+    "git_blob_sha1": "07e02cd5b328fb8f8aca35476074b80877fd9746"
+  },
+  {
+    "original": "tools/run_actor_grad_clip_fixed10_300k.sh",
+    "archived": "legacy/tools/run_actor_grad_clip_fixed10_300k.sh",
+    "git_blob_sha1": "3313454a726e208a32f722614b292f222f4d2142"
+  },
+  {
+    "original": "tools/run_actor_mission_context_3m.sh",
+    "archived": "legacy/tools/run_actor_mission_context_3m.sh",
+    "git_blob_sha1": "fd425a3cdec29c28fc0d9a8e67e55942d0c8eff5"
+  },
+  {
+    "original": "tools/run_actor_only_gru_history_3m.sh",
+    "archived": "legacy/tools/run_actor_only_gru_history_3m.sh",
+    "git_blob_sha1": "5ccc84158c4f54d1229ed12c2ac02bb0bde45cf7"
+  },
+  {
+    "original": "tools/run_brsc_mappo_v1_3m.sh",
+    "archived": "legacy/tools/run_brsc_mappo_v1_3m.sh",
+    "git_blob_sha1": "897b01ba32bc7e76bcc1d82606c81def240dde17"
+  },
+  {
+    "original": "tools/run_caiw_mappo_v2_3m.sh",
+    "archived": "legacy/tools/run_caiw_mappo_v2_3m.sh",
+    "git_blob_sha1": "9ee32b83e4ce6b449159b11d3fc6942300c04a7f"
+  },
+  {
+    "original": "tools/run_critic_mission_context_factorial.sh",
+    "archived": "legacy/tools/run_critic_mission_context_factorial.sh",
+    "git_blob_sha1": "1f3001e7499238d2e26f7ed8d0bdceda6e765f9f"
+  },
+  {
+    "original": "tools/run_dawe_fixed10_300k.sh",
+    "archived": "legacy/tools/run_dawe_fixed10_300k.sh",
+    "git_blob_sha1": "2939862193ae0531b7c8af1a640511bae76237fe"
+  },
+  {
+    "original": "tools/run_eawb_formal_multiseed.sh",
+    "archived": "legacy/tools/run_eawb_formal_multiseed.sh",
+    "git_blob_sha1": "dbc58e24f8a9749e2ef9c3cd9302aacb5842822b"
+  },
+  {
+    "original": "tools/run_fbmr_stage2_development.sh",
+    "archived": "legacy/tools/run_fbmr_stage2_development.sh",
+    "git_blob_sha1": "036cbb163aa737ba19af8eb9125ef11fec6f437d"
+  },
+  {
+    "original": "tools/run_fbmr_v2_development.sh",
+    "archived": "legacy/tools/run_fbmr_v2_development.sh",
+    "git_blob_sha1": "7c924cc9d993f73cbc4951ccf707dcce780f5d1f"
+  },
+  {
+    "original": "tools/run_fire_ready_plain_3m.sh",
+    "archived": "legacy/tools/run_fire_ready_plain_3m.sh",
+    "git_blob_sha1": "4776fefdec107acad656bcfe19872ad9ba5ea33c"
+  },
+  {
+    "original": "tools/run_formal_holdout.py",
+    "archived": "legacy/tools/run_formal_holdout.py",
+    "git_blob_sha1": "93e6d555e9af0ee1c2d7e15e59c6b4aa0ecfcbf5"
+  },
+  {
+    "original": "tools/run_gated_residual_ea_development.sh",
+    "archived": "legacy/tools/run_gated_residual_ea_development.sh",
+    "git_blob_sha1": "4e79b7e0215abdffa14f76968be5cf6f0751073e"
+  },
+  {
+    "original": "tools/run_hta_mappo_v1_3m.sh",
+    "archived": "legacy/tools/run_hta_mappo_v1_3m.sh",
+    "git_blob_sha1": "aadf90bd0823c0825dc680b2b65135c7136e0e4e"
+  },
+  {
+    "original": "tools/run_hta_mappo_v2_3m.sh",
+    "archived": "legacy/tools/run_hta_mappo_v2_3m.sh",
+    "git_blob_sha1": "b5a62ce0a7f44145fc0d12c6f8a214ce28a89f47"
+  },
+  {
+    "original": "tools/run_iwsc_mappo_3m.sh",
+    "archived": "legacy/tools/run_iwsc_mappo_3m.sh",
+    "git_blob_sha1": "bab5f28d455fd076e644a18207112e82fcb3adeb"
+  },
+  {
+    "original": "tools/run_mappo_baseline_learnability.sh",
+    "archived": "legacy/tools/run_mappo_baseline_learnability.sh",
+    "git_blob_sha1": "2b6a1a5e1b1bf00e861be65f0c12cf5dff1f0403"
+  },
+  {
+    "original": "tools/run_mappo_critic_baseline_1p5m.sh",
+    "archived": "legacy/tools/run_mappo_critic_baseline_1p5m.sh",
+    "git_blob_sha1": "48b813d38725603ceeedf15e8def771937b6915d"
+  },
+  {
+    "original": "tools/run_mappo_late_lr_continuation.sh",
+    "archived": "legacy/tools/run_mappo_late_lr_continuation.sh",
+    "git_blob_sha1": "5a85f55f9478a00b1cd08b50cef3ed67582f8d4a"
+  },
+  {
+    "original": "tools/run_mission_aware_film_3m.sh",
+    "archived": "legacy/tools/run_mission_aware_film_3m.sh",
+    "git_blob_sha1": "e24053c56d7f1e05ceb3dcd7268cd9fa4fb67675"
+  },
+  {
+    "original": "tools/run_mission_aware_film_kl_guard_3m.sh",
+    "archived": "legacy/tools/run_mission_aware_film_kl_guard_3m.sh",
+    "git_blob_sha1": "6ae1f838fecfa4c58d1de525a678f84049688ba7"
+  },
+  {
+    "original": "tools/run_modular_first_batch_1p5m.sh",
+    "archived": "legacy/tools/run_modular_first_batch_1p5m.sh",
+    "git_blob_sha1": "365b20b0db64faebf37ceb39c1cd85b15c0569be"
+  },
+  {
+    "original": "tools/run_multiseed_confirmation.sh",
+    "archived": "legacy/tools/run_multiseed_confirmation.sh",
+    "git_blob_sha1": "d2cd35b5f261dfaf4b5db467bbd0b0b576c38f4e"
+  },
+  {
+    "original": "tools/run_next_stage_screening.sh",
+    "archived": "legacy/tools/run_next_stage_screening.sh",
+    "git_blob_sha1": "2ea089561f42081819265dc05eefef2136a1ce53"
+  },
+  {
+    "original": "tools/run_plain_transition_mechanism_diagnostic.py",
+    "archived": "legacy/tools/run_plain_transition_mechanism_diagnostic.py",
+    "git_blob_sha1": "da4880e122ade74202046af513516c0d05e52120"
+  },
+  {
+    "original": "tools/run_pwtr_ablation_300k.sh",
+    "archived": "legacy/tools/run_pwtr_ablation_300k.sh",
+    "git_blob_sha1": "10961b794d4bc250d6b55675cac8001e2b51ee8f"
+  },
+  {
+    "original": "tools/run_pwtr_actor_critic_decomposition_300k.sh",
+    "archived": "legacy/tools/run_pwtr_actor_critic_decomposition_300k.sh",
+    "git_blob_sha1": "ee3078ab91a0019bffc79a8585f1d27f20b553a0"
+  },
+  {
+    "original": "tools/run_rv_fixed10_300k.sh",
+    "archived": "legacy/tools/run_rv_fixed10_300k.sh",
+    "git_blob_sha1": "0ec7982456080bc8556a1b8c6af59006dee2f74d"
+  },
+  {
+    "original": "tools/run_team_credit_screen_300k.sh",
+    "archived": "legacy/tools/run_team_credit_screen_300k.sh",
+    "git_blob_sha1": "1605e1ca68477214d2e1a18cef627cf152482811"
+  },
+  {
+    "original": "tools/run_w1sg_300k.sh",
+    "archived": "legacy/tools/run_w1sg_300k.sh",
+    "git_blob_sha1": "f60f3f48c4807ffb5b19042f1c46d94fce52d1c6"
+  },
+  {
+    "original": "tools/run_ws_pbrs_development.sh",
+    "archived": "legacy/tools/run_ws_pbrs_development.sh",
+    "git_blob_sha1": "9392aaed3c26cd531c3135fa8e013f6f0931937f"
+  },
+  {
+    "original": "tools/run_wsai_300k.sh",
+    "archived": "legacy/tools/run_wsai_300k.sh",
+    "git_blob_sha1": "24c994fb8455c88a4f1945af55e75e5c680b0c3b"
+  },
+  {
+    "original": "tools/run_wsmh_300k.sh",
+    "archived": "legacy/tools/run_wsmh_300k.sh",
+    "git_blob_sha1": "a695920c983c55a8dbed54dae25385f90e4f138d"
+  },
+  {
+    "original": "tools/single_wave_stability_common.py",
+    "archived": "legacy/tools/single_wave_stability_common.py",
+    "git_blob_sha1": "85dcb52e8c45eed40fa0f5efa376f3bfa8596f0e"
+  },
+  {
+    "original": "tools/smoke_actor_grad_clip_fixed10.py",
+    "archived": "legacy/tools/smoke_actor_grad_clip_fixed10.py",
+    "git_blob_sha1": "4da477c5a7f2542ef9b00c7d18e567e06f1b0d45"
+  },
+  {
+    "original": "tools/smoke_actor_grad_clip_mappo.py",
+    "archived": "legacy/tools/smoke_actor_grad_clip_mappo.py",
+    "git_blob_sha1": "2d1044f8106a838c2594a81395e4bda11d744f67"
+  },
+  {
+    "original": "tools/smoke_brsc_mappo.py",
+    "archived": "legacy/tools/smoke_brsc_mappo.py",
+    "git_blob_sha1": "d90214b388df4d26298bf61a8fba8ed3f3241b18"
+  },
+  {
+    "original": "tools/smoke_brsc_persistent_integration.py",
+    "archived": "legacy/tools/smoke_brsc_persistent_integration.py",
+    "git_blob_sha1": "7b5214902fba264f5efc2f5aa807df0fa962f4ec"
+  },
+  {
+    "original": "tools/smoke_caiw_mappo.py",
+    "archived": "legacy/tools/smoke_caiw_mappo.py",
+    "git_blob_sha1": "1fa331cf944a8da4cb06e6082e5703e05d4cb82f"
+  },
+  {
+    "original": "tools/smoke_caiw_persistent_integration.py",
+    "archived": "legacy/tools/smoke_caiw_persistent_integration.py",
+    "git_blob_sha1": "1bd8be134c781fcc21b1d2e3e8a9a6aab34dcf35"
+  },
+  {
+    "original": "tools/smoke_dawe_fixed10.py",
+    "archived": "legacy/tools/smoke_dawe_fixed10.py",
+    "git_blob_sha1": "51653589948d5d7405d2c2406f2d69b892e17c26"
+  },
+  {
+    "original": "tools/smoke_delayed_swgp_mappo.py",
+    "archived": "legacy/tools/smoke_delayed_swgp_mappo.py",
+    "git_blob_sha1": "28c5f2ea6773229e5cc5ebb7f8f67794f8e8ec47"
+  },
+  {
+    "original": "tools/smoke_fbmr_stage2_development.py",
+    "archived": "legacy/tools/smoke_fbmr_stage2_development.py",
+    "git_blob_sha1": "0fdf7933f10e4d55e34ae7281a09f3863356d82c"
+  },
+  {
+    "original": "tools/smoke_fbmr_v2_development.py",
+    "archived": "legacy/tools/smoke_fbmr_v2_development.py",
+    "git_blob_sha1": "454ce3935625c57f45dfc8382325c6a12d7575e8"
+  },
+  {
+    "original": "tools/smoke_fire_ready_plain.py",
+    "archived": "legacy/tools/smoke_fire_ready_plain.py",
+    "git_blob_sha1": "42e0b695e5bd67842fe186689695e04ef28678e1"
+  },
+  {
+    "original": "tools/smoke_gated_residual_ea_development.py",
+    "archived": "legacy/tools/smoke_gated_residual_ea_development.py",
+    "git_blob_sha1": "5fd0c4552a857e862856e70193c7affb6259596a"
+  },
+  {
+    "original": "tools/smoke_hta_mappo.py",
+    "archived": "legacy/tools/smoke_hta_mappo.py",
+    "git_blob_sha1": "640d9fa91c23aa7a4d5a2c57a711ac5e4827555f"
+  },
+  {
+    "original": "tools/smoke_hta_persistent_integration.py",
+    "archived": "legacy/tools/smoke_hta_persistent_integration.py",
+    "git_blob_sha1": "ca63c813c050cb12ab22b87b1a645614a73917c0"
+  },
+  {
+    "original": "tools/smoke_hta_worker_consolidation.py",
+    "archived": "legacy/tools/smoke_hta_worker_consolidation.py",
+    "git_blob_sha1": "b4b5797d5da8395ac12f94bd787a6a8d8337a2b1"
+  },
+  {
+    "original": "tools/smoke_iwsc_mappo.py",
+    "archived": "legacy/tools/smoke_iwsc_mappo.py",
+    "git_blob_sha1": "343c7c673effe1cf5f1341a1c1cb094216417410"
+  },
+  {
+    "original": "tools/smoke_iwsc_persistent_integration.py",
+    "archived": "legacy/tools/smoke_iwsc_persistent_integration.py",
+    "git_blob_sha1": "69419aae7b3b98717ab43a89153e148dc2d7892d"
+  },
+  {
+    "original": "tools/smoke_jiao2025_core_3m.py",
+    "archived": "legacy/tools/smoke_jiao2025_core_3m.py",
+    "git_blob_sha1": "b21946637d6f4c8ea6c29fd061cd8cb6ea989ee0"
+  },
+  {
+    "original": "tools/smoke_mappo_critic_baseline.py",
+    "archived": "legacy/tools/smoke_mappo_critic_baseline.py",
+    "git_blob_sha1": "935d3cf2cb2432976750c27bce7fbf09c07bd82d"
+  },
+  {
+    "original": "tools/smoke_marc_factorial.py",
+    "archived": "legacy/tools/smoke_marc_factorial.py",
+    "git_blob_sha1": "e01999844464816bcc4af07955e11cdb88736e1b"
+  },
+  {
+    "original": "tools/smoke_marc_mappo_v2.py",
+    "archived": "legacy/tools/smoke_marc_mappo_v2.py",
+    "git_blob_sha1": "2bcaf4c8c936210e8b827acc98f87bec2dbebc9d"
+  },
+  {
+    "original": "tools/smoke_marc_state_memory.py",
+    "archived": "legacy/tools/smoke_marc_state_memory.py",
+    "git_blob_sha1": "1b48df8e0466ff5783445375cd122a87a01fae9a"
+  },
+  {
+    "original": "tools/smoke_marc_wsgru_screen.py",
+    "archived": "legacy/tools/smoke_marc_wsgru_screen.py",
+    "git_blob_sha1": "7a8f1526f75cac0b594b694c3c63643a6e13d45d"
+  },
+  {
+    "original": "tools/smoke_pwtr_actor_critic_decomposition.py",
+    "archived": "legacy/tools/smoke_pwtr_actor_critic_decomposition.py",
+    "git_blob_sha1": "e34735cc569290f71c62dc06b8ea8bbd06282602"
+  },
+  {
+    "original": "tools/smoke_pwtr_mappo.py",
+    "archived": "legacy/tools/smoke_pwtr_mappo.py",
+    "git_blob_sha1": "be4a0ee53853240cad6210b869c29b0a00a892d3"
+  },
+  {
+    "original": "tools/smoke_rv_fixed10.py",
+    "archived": "legacy/tools/smoke_rv_fixed10.py",
+    "git_blob_sha1": "55f1630985ea55e9c88134488083122b6ab6d54d"
+  },
+  {
+    "original": "tools/smoke_swgp_mappo.py",
+    "archived": "legacy/tools/smoke_swgp_mappo.py",
+    "git_blob_sha1": "9a0654fd3952c7451c4d091d6a2dba3d66dc5b80"
+  },
+  {
+    "original": "tools/smoke_team_credit_screen.py",
+    "archived": "legacy/tools/smoke_team_credit_screen.py",
+    "git_blob_sha1": "c53080b50af64bdd0e3ec8d7f7a7d1b94a41170f"
+  },
+  {
+    "original": "tools/smoke_w1sg_mappo.py",
+    "archived": "legacy/tools/smoke_w1sg_mappo.py",
+    "git_blob_sha1": "9624c99d2eb4877c3091c78eecd622c82673892d"
+  },
+  {
+    "original": "tools/smoke_wave_balanced_curriculum.py",
+    "archived": "legacy/tools/smoke_wave_balanced_curriculum.py",
+    "git_blob_sha1": "d7a1908e841804378d49722236806f719f5c2159"
+  },
+  {
+    "original": "tools/smoke_ws_pbrs_development.py",
+    "archived": "legacy/tools/smoke_ws_pbrs_development.py",
+    "git_blob_sha1": "dc9fa38335ce969b9c1e55494e841bf8cf699701"
+  },
+  {
+    "original": "tools/smoke_wsai_mappo.py",
+    "archived": "legacy/tools/smoke_wsai_mappo.py",
+    "git_blob_sha1": "3ed3244f7b6d8d3c62c8f4d0659562a73542df22"
+  },
+  {
+    "original": "tools/smoke_wsmh_mappo.py",
+    "archived": "legacy/tools/smoke_wsmh_mappo.py",
+    "git_blob_sha1": "2bf830230ad46186fde51d14e292aae7a3147bfb"
+  },
+  {
+    "original": "tools/stress_test_ground_guard.py",
+    "archived": "legacy/tools/stress_test_ground_guard.py",
+    "git_blob_sha1": "7c4d6e8ef348713876672143b8512f7f8857dcc8"
+  },
+  {
+    "original": "tools/supplemental_causal_audit.py",
+    "archived": "legacy/tools/supplemental_causal_audit.py",
+    "git_blob_sha1": "0906583f2d5a111a2f967b414ee29d680e88c7e7"
+  },
+  {
+    "original": "tools/supplemental_causal_audit_v2.py",
+    "archived": "legacy/tools/supplemental_causal_audit_v2.py",
+    "git_blob_sha1": "ddc6f4f0ff48c22b36ed77496331feed4dc99cf7"
+  },
+  {
+    "original": "tools/supplemental_causal_audit_v3.py",
+    "archived": "legacy/tools/supplemental_causal_audit_v3.py",
+    "git_blob_sha1": "1b0148811f4b3fdb7d92f3c2b3d012a703ff02a6"
+  },
+  {
+    "original": "tools/train_mappo_horizon_continuation.py",
+    "archived": "legacy/tools/train_mappo_horizon_continuation.py",
+    "git_blob_sha1": "f97ac4d3c020e88b375ec5ebf8da7b6e93c9895d"
+  },
+  {
+    "original": "tools/train_mappo_late_lr_branch.py",
+    "archived": "legacy/tools/train_mappo_late_lr_branch.py",
+    "git_blob_sha1": "afa3f3532fab1282ffe5372550810fe0d9d80bfb"
+  },
+  {
+    "original": "tools/validate_combat_environment.py",
+    "archived": "legacy/tools/validate_combat_environment.py",
+    "git_blob_sha1": "d42e0b1303a8fa292576c79da8ef8339f8f8c1de"
+  },
+  {
+    "original": "tools/validate_persistent_wave_environment.py",
+    "archived": "legacy/tools/validate_persistent_wave_environment.py",
+    "git_blob_sha1": "e4c0a5eb3b00539fcc6dac800bdc386873c10e0f"
+  }
+]

@@ -18,7 +18,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 def load_configs() -> tuple[dict, dict]:
     environment = yaml.safe_load(
-        (PROJECT_ROOT / "configs/combat_environment.yaml").read_text(encoding="utf-8")
+        (PROJECT_ROOT / "configs/single_round_environment.yaml").read_text(encoding="utf-8")
     )
     algorithm = yaml.safe_load(
         (PROJECT_ROOT / "configs/mappo.yaml").read_text(encoding="utf-8")
@@ -57,13 +57,13 @@ def test_direct_entry_runs_outside_project_with_spawn_and_flat_results():
                 str(script),
                 "--smoke",
                 "--device",
-                "cpu",
+                "cuda",
                 "--num-envs",
                 "1",
                 "--total-sampled-steps",
                 "4",
                 "--env-config",
-                "configs/combat_environment.yaml",
+                "configs/single_round_environment.yaml",
                 "--algorithm-config",
                 "configs/mappo.yaml",
                 "--output-dir",
@@ -104,13 +104,13 @@ def test_direct_entry_runs_outside_project_with_spawn_and_flat_results():
                 str(script),
                 "--smoke",
                 "--device",
-                "cpu",
+                "cuda",
                 "--num-envs",
                 "1",
                 "--total-sampled-steps",
                 "8",
                 "--env-config",
-                "configs/combat_environment.yaml",
+                "configs/single_round_environment.yaml",
                 "--algorithm-config",
                 "configs/mappo.yaml",
                 "--resume",

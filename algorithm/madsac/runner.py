@@ -8,6 +8,7 @@ import math
 from pathlib import Path
 from typing import Any
 import numpy as np
+import torch
 
 from algorithm.common.checkpoint import evaluation_selection_key
 from algorithm.common.evaluator import episode_return_metrics
@@ -43,6 +44,8 @@ class MADSACTrainingRunner:
         self.num_envs = int(num_envs or training["num_train_envs"])
         self.total_sampled_steps = int(total_sampled_steps or training["total_sampled_steps"])
         self.device = str(device or training["device"])
+        if torch.device(self.device).type != "cuda" or not torch.cuda.is_available():
+            raise RuntimeError("CUDA is mandatory for training; no CPU fallback")
         self.seed = int(training["seed"] if seed is None else seed)
         if self.total_sampled_steps % self.num_envs:
             raise ValueError("total_sampled_steps must be divisible by num_train_envs")
@@ -118,7 +121,6 @@ class MADSACTrainingRunner:
             "evaluation_mode": self.evaluation_mode,
             "evaluation_policy_seed": self.evaluation_policy_seed,
             "environment_variant": self.env_config["environment_variant"],
-            "total_waves": int(self.env_config["persistent_waves"]["total_waves"]),
             "max_steps": int(self.env_config["simulation"]["max_steps"]),
             "sampled_steps_unit": "environment_transitions_not_agent_transitions",
             "formal_exact_resume_supported": False,
@@ -132,7 +134,8 @@ class MADSACTrainingRunner:
                 f"| hidden={s['hidden_dim']} | heads={s['attention_heads']} | gamma={s['gamma']} "
                 f"| alpha={s['alpha']} | tau={s['tau']} | delay={s['policy_delay']} "
                 f"| replay={s['replay_capacity']} | batch={s['minibatch_size']} "
-                f"| learning_starts={s['learning_starts']} | eval={s['evaluation_mode']}")
+                f"| learning_starts={s['learning_starts']} | eval={s['evaluation_mode']} "
+                f"| variant={s['environment_variant']} | max_steps={s['max_steps']}")
 
     def _completed(self, result: VectorStep):
         self.agent_episode_returns += result.rewards
@@ -162,7 +165,10 @@ class MADSACTrainingRunner:
             "mean_step_reward": float(np.mean(result.rewards)),
             "completed_episodes_this_step": len(rows),
             "team_episode_return": mean("team_episode_return"),
-            "average_waves_cleared": mean("waves_cleared"),
+            "win": mean("red_success"), "loss": mean("blue_win"),
+            "draw": mean("draw"), "episode_length": mean("episode_length"),
+            "timeout": None if not rows else float(np.mean([
+                row["termination_reason"] == "red_failure_timeout" for row in rows])),
             "red_loss": mean("red_losses"), "blue_loss": mean("blue_losses"),
             "red_boundary_exits": mean("red_boundary_exits"),
             "red_ground_losses": mean("red_ground_losses"),
@@ -184,7 +190,7 @@ class MADSACTrainingRunner:
             writer.writeheader(); writer.writerows(self.evaluation_history)
 
     def _evaluation_key(self, row):
-        return evaluation_selection_key(row, self.env_config["environment_variant"])
+        return evaluation_selection_key(row)
 
     def evaluate(self):
         row = {"sampled_steps": self.trainer.sampled_steps,
@@ -200,9 +206,10 @@ class MADSACTrainingRunner:
             self.best_sampled_steps = self.trainer.sampled_steps
             self.save_checkpoint(self.output_dir / "best_eval.pt")
         print(f"[EVAL] steps={self.trainer.sampled_steps} | mode={self.evaluation_mode} "
-              f"| W1/W2/W3={row['clear_wave_1_probability']:.2f}/"
-              f"{row['clear_wave_2_probability']:.2f}/{row['clear_wave_3_probability']:.2f} "
-              f"| waves={row['average_waves_cleared']:.2f} | R={row['average_return']:.2f}", flush=True)
+              f"| return={row['average_return']:.2f} | win={row['win_rate']:.2f} "
+              f"| loss={row['loss_rate']:.2f} | draw={row['draw_rate']:.2f} "
+              f"| timeout={row['timeout_rate']:.2f} | red_loss={row['average_red_loss']:.2f} "
+              f"| blue_loss={row['average_blue_loss']:.2f} | episode_length={row['average_episode_length']:.1f}", flush=True)
         return row
 
     def checkpoint_extra(self):
@@ -263,7 +270,12 @@ class MADSACTrainingRunner:
         rows = self.completed_records[-self.recent_episode_window:]
         return {
             "return": None if not rows else float(np.mean([r["team_episode_return"] for r in rows])),
-            "waves": None if not rows else float(np.mean([r.get("waves_cleared", 0) for r in rows])),
+            **{key: None if not rows else float(np.mean([r[field] for r in rows]))
+               for key, field in {"win": "red_success", "loss": "blue_win", "draw": "draw",
+                                  "red_loss": "red_losses", "blue_loss": "blue_losses",
+                                  "episode_length": "episode_length"}.items()},
+            "timeout": None if not rows else float(np.mean([
+                r["termination_reason"] == "red_failure_timeout" for r in rows])),
         }
 
     def run(self):
@@ -290,7 +302,7 @@ class MADSACTrainingRunner:
                     recent = self.recent_metrics()
                     print(f"[TRAIN] steps={self.trainer.sampled_steps}/{self.total_sampled_steps} "
                           f"| episodes={len(self.completed_records)} | recent_return={recent['return']} "
-                          f"| recent_waves={recent['waves']} | replay={len(self.replay)} "
+                          f"| results={recent} | replay={len(self.replay)} "
                           f"| critic_updates={self.trainer.critic_update_count} "
                           f"| actor_updates={self.trainer.actor_update_count}", flush=True)
                     while self.next_console <= self.trainer.sampled_steps:

@@ -10,11 +10,14 @@ def validate_madsac_config(env_config: dict, algorithm_config: dict) -> None:
     n, t, i = algorithm_config["network"], algorithm_config["training"], algorithm_config["implementation"]
     if algorithm_config.get("algorithm") != "madsac":
         raise RuntimeError("algorithm config is not madsac")
-    if env_config.get("environment_variant") != "persistent_wave_v2":
-        raise RuntimeError("MADSAC formal environment must be persistent_wave_v2")
-    if int(env_config["persistent_waves"]["total_waves"]) != 3 or int(env_config["simulation"]["max_steps"]) != 3000:
-        raise RuntimeError("MADSAC formal task must be three-wave max_steps=3000")
-    expected = (observation_dim_from_config(env_config.get("observation", {})), 3, 4)
+    if env_config.get("environment_variant") != "single_round_v1":
+        raise RuntimeError("MADSAC formal environment must be single_round_v1")
+    if str(env_config.get("environment_version")) != "2.3":
+        raise RuntimeError("MADSAC environment_version must be 2.3")
+    if int(env_config["simulation"]["max_steps"]) != 1000:
+        raise RuntimeError("MADSAC formal task requires max_steps=1000")
+    expected = (observation_dim_from_config(env_config.get("observation", {})), 3,
+                int(env_config.get("scenario", {}).get("team_size", -1)))
     actual = (int(n["observation_dim"]), int(n["action_dim"]), int(n["num_agents"]))
     if actual != expected or actual != (52, 3, 4):
         raise RuntimeError(f"MADSAC dimension mismatch: {actual} vs {expected}")
@@ -38,6 +41,8 @@ def validate_madsac_checkpoint(
         raise RuntimeError("MADSAC checkpoint identity/version mismatch")
     extra = state.get("extra", {})
     checks = {
+        "environment_version": extra.get("environment_version"),
+        "environment_variant": extra.get("environment_variant"),
         "training_seed": int(extra.get("training_seed", -1)),
         "environment_config_sha256": extra.get("environment_config_sha256"),
         "algorithm_config_sha256": extra.get("algorithm_config_sha256"),
@@ -46,6 +51,8 @@ def validate_madsac_checkpoint(
         "num_agents": int(extra.get("num_agents", -1)),
     }
     expected = {
+        "environment_version": "2.3",
+        "environment_variant": "single_round_v1",
         "training_seed": int(
             algorithm_config["training"]["seed"]
             if expected_training_seed is None

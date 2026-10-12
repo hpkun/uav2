@@ -1,4 +1,4 @@
-"""Paper-Constrained Direct 4v4 Combat Environment V2.3."""
+"""Single-round 4v4 combat with the frozen V2.3 battle foundations."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -10,7 +10,7 @@ from .dynamics import PointMassDynamics
 from .integrator import RK4Integrator
 from .models import AircraftState
 from .control import action_to_control
-from .fixed_policy import NearestTargetPursuitPolicy
+from .fixed_policy import NearestTargetPursuitPolicy, GroundAwareNearestTargetPursuitPolicy
 from .geometry import engagement_geometry
 from .observation import OBSERVATION_DIM, build_team_observations, observation_dim_from_config
 from .reward import paper_state_reward_components
@@ -19,7 +19,7 @@ from .weapon import FireState, WeaponEnvelope
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_COMBAT_CONFIG = PROJECT_ROOT / "configs/combat_environment.yaml"
+DEFAULT_COMBAT_CONFIG = PROJECT_ROOT / "configs/single_round_environment.yaml"
 
 
 class MultiUAVCombatEnv:
@@ -27,6 +27,7 @@ class MultiUAVCombatEnv:
 
     team_size, observation_dim, action_dim = 4, OBSERVATION_DIM, 3
     environment_version = ENVIRONMENT_VERSION
+    environment_variant = "single_round_v1"
 
     def __init__(
         self, config: str | Path | dict[str, Any] = DEFAULT_COMBAT_CONFIG
@@ -34,16 +35,30 @@ class MultiUAVCombatEnv:
         self.config = load_config(config) if not isinstance(config, dict) else config
         if str(self.config.get("environment_version")) != ENVIRONMENT_VERSION:
             raise ValueError(f"environment_version must be {ENVIRONMENT_VERSION}")
+        if self.config.get("environment_variant") != "single_round_v1":
+            raise ValueError("environment_variant must be single_round_v1")
+        if int(self.config["scenario"]["team_size"]) != 4:
+            raise ValueError("single_round_v1 requires team_size=4")
         self.spec = aircraft_spec(self.config)
         self.observation_dim = observation_dim_from_config(self.config["observation"])
+        if self.observation_dim != 52:
+            raise ValueError("single_round_v1 requires observation_dim=52")
         self.dt = float(self.config["simulation"]["dt"])
         self.max_steps = int(self.config["simulation"]["max_steps"])
         self.arena_radius = float(self.config["arena"]["radius"])
         self.dynamics = PointMassDynamics()
         self.integrator = RK4Integrator(self.dt)
-        self.fixed_policy = NearestTargetPursuitPolicy(
-            self.config["blue_policy"], self.config["action"]
-        )
+        policy_type = self.config["blue_policy"].get("type")
+        if policy_type == "nearest_target":
+            self.fixed_policy = NearestTargetPursuitPolicy(
+                self.config["blue_policy"], self.config["action"]
+            )
+        elif policy_type == "ground_aware_nearest_target":
+            self.fixed_policy = GroundAwareNearestTargetPursuitPolicy(
+                self.config["blue_policy"], self.config["action"], self.config["aircraft"]
+            )
+        else:
+            raise ValueError(f"unsupported blue_policy.type: {policy_type!r}")
         self.weapon = WeaponEnvelope(**self.config["weapon"])
         self.rng = np.random.default_rng()
         self.red: list[AircraftState] = []
@@ -53,6 +68,7 @@ class MultiUAVCombatEnv:
         self.red_last_executed_phi = np.zeros(self.team_size, dtype=np.float32)
         self.blue_last_executed_phi = np.zeros(self.team_size, dtype=np.float32)
         self.steps = 0
+        self._episode_done = True
         self.combat_counts: dict[str, dict[str, int]] = {}
         self.first_steps: dict[str, dict[str, int | None]] = {}
         self.episode_reward_components: dict[str, np.ndarray] = {}
@@ -92,13 +108,24 @@ class MultiUAVCombatEnv:
         self.red_last_executed_phi.fill(0.0)
         self.blue_last_executed_phi.fill(0.0)
         self.steps = 0
+        self._episode_done = False
         self._reset_metrics()
+        if isinstance(self.fixed_policy, GroundAwareNearestTargetPursuitPolicy):
+            self.fixed_policy.reset_diagnostics()
         return self._observations(), {
             "environment_version": ENVIRONMENT_VERSION,
+            "environment_variant": self.environment_variant,
             "radial_angle": radial_angle,
+            **self._blue_diagnostics(),
             "red_alive_mask": self.red_alive_mask,
             "blue_alive_mask": self.blue_alive_mask,
         }
+
+    def _blue_diagnostics(self) -> dict[str, Any]:
+        if not isinstance(self.fixed_policy, GroundAwareNearestTargetPursuitPolicy):
+            return {}
+        return {**self.fixed_policy.diagnostics(),
+                "blue_ground_guard_override_mask": self.fixed_policy.last_override_mask.copy()}
 
     def _observations(self) -> np.ndarray:
         return build_team_observations(
@@ -289,6 +316,7 @@ class MultiUAVCombatEnv:
         blue_survivors = int(self.blue_alive_mask.sum())
         info: dict[str, Any] = {
             "environment_version": ENVIRONMENT_VERSION,
+            "environment_variant": self.environment_variant,
             "red_success": red_win,
             "red_win": red_win,
             "blue_win": blue_win,
@@ -329,11 +357,14 @@ class MultiUAVCombatEnv:
         for name, values in self.episode_reward_components.items():
             info[f"episode_{name}_rewards"] = values.copy()
             info[f"episode_{name}_total"] = float(values.sum())
+        info.update(self._blue_diagnostics())
         return info
 
     def step(
         self, red_actions: np.ndarray, blue_actions: np.ndarray | None = None
     ) -> tuple[np.ndarray, np.ndarray, bool, bool, dict[str, Any]]:
+        if self._episode_done:
+            raise RuntimeError("episode is finished; reset before stepping")
         red_actions = np.asarray(red_actions, dtype=np.float32)
         if red_actions.shape != (self.team_size, self.action_dim) or not np.all(
             np.isfinite(red_actions)
@@ -388,6 +419,7 @@ class MultiUAVCombatEnv:
         blue_survivors = int(self.blue_alive_mask.sum())
         terminated = bool(red_survivors == 0 or blue_survivors == 0)
         truncated = bool(not terminated and self.steps >= self.max_steps)
+        self._episode_done = terminated or truncated
         return (
             self._observations(),
             rewards.astype(np.float32),

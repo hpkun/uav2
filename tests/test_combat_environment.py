@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def config():
-    return load_config(ROOT / "configs/combat_environment.yaml")
+    return load_config(ROOT / "configs/single_round_environment.yaml")
 
 
 def state(x=0.0, y=0.0, altitude=3000.0, psi=0.0, theta=0.0,

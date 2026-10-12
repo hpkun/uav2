@@ -248,8 +248,12 @@ def test_evaluation_modes_and_rng_isolation(monkeypatch):
             "red_success": 0.0, "blue_win": 0.0, "draw": 1.0,
             "termination_reason": "red_failure_timeout", "red_losses": 0,
             "blue_losses": 0, "red_boundary_exits": 0, "red_ground_losses": 0,
-            "episode_length": 1, "waves_cleared": 0, "total_waves": 3,
-            "per_wave_metrics": [],
+            "episode_length": 1,
+            **{f"{side}_{event}": 0 for side in ("red", "blue") for event in
+               ("attack_kills", "boundary_exits", "ground_losses")},
+            **{f"{side}_first_{event}_step": None for side in ("red", "blue")
+               for event in ("fire_window", "attempt", "hit", "kill")},
+            **{f"episode_{name}_total": 0 for name in ("r1", "r2", "r3", "r4")},
         }
 
     monkeypatch.setattr("algorithm.madsac.evaluation.evaluate_madsac_episode", fake_episode)
@@ -283,8 +287,12 @@ def test_per_scenario_policy_rng_is_stable_distinct_and_order_independent(monkey
             "red_success": 0.0, "blue_win": 0.0, "draw": 1.0,
             "termination_reason": "red_failure_timeout", "red_losses": 0,
             "blue_losses": 0, "red_boundary_exits": 0, "red_ground_losses": 0,
-            "episode_length": 1, "waves_cleared": 0, "total_waves": 3,
-            "per_wave_metrics": [],
+            "episode_length": 1,
+            **{f"{side}_{event}": 0 for side in ("red", "blue") for event in
+               ("attack_kills", "boundary_exits", "ground_losses")},
+            **{f"{side}_first_{event}_step": None for side in ("red", "blue")
+               for event in ("fire_window", "attempt", "hit", "kill")},
+            **{f"episode_{name}_total": 0 for name in ("r1", "r2", "r3", "r4")},
         }
 
     monkeypatch.setattr("algorithm.madsac.evaluation.evaluate_madsac_episode", fake_episode)
@@ -295,7 +303,7 @@ def test_per_scenario_policy_rng_is_stable_distinct_and_order_independent(monkey
     assert torch.equal(training_before, trainer.policy_generator.get_state())
 
 
-def test_wave_transition_not_done_but_terminated_or_truncated_are_done():
+def test_ongoing_transition_not_done_but_truncated_is_done():
     replay = JointReplayBuffer(capacity=4)
     runner = object.__new__(MADSACTrainingRunner)
     runner.replay = replay
@@ -303,7 +311,7 @@ def test_wave_transition_not_done_but_terminated_or_truncated_are_done():
     result = VectorStep(
         zeros_obs, zeros_obs, np.zeros((2, 4), np.float32),
         np.array([False, False]), np.array([False, True]),
-        [{"wave_transition": True}, {}], np.ones((2, 4), np.float32), np.ones((2, 4), np.float32),
+        [{}, {}], np.ones((2, 4), np.float32), np.ones((2, 4), np.float32),
     )
     runner.store_vector_step(zeros_obs, np.zeros((2, 4, 3), np.float32), result)
     assert replay.dones[:2].tolist() == [False, True]

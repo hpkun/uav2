@@ -23,8 +23,8 @@ def resolved(path):
 
 def build_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--env-config", default="configs/persistent_wave_v2_environment.yaml")
-    parser.add_argument("--algorithm-config", default="configs/madsac_persistent_wave_v2_3m.yaml")
+    parser.add_argument("--env-config", default="configs/single_round_environment.yaml")
+    parser.add_argument("--algorithm-config", default="configs/madsac_single_round_3m.yaml")
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--device", choices=("cpu", "cuda"))
     parser.add_argument("--seed", type=int)

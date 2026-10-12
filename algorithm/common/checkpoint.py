@@ -15,7 +15,9 @@ def _checkpoint_extra(state: dict[str, Any]) -> dict[str, Any]:
 
 
 def _environment_variant(config: dict[str, Any]) -> str:
-    return str(config.get("environment_variant", "direct_v2_3"))
+    if config.get("environment_variant") != "single_round_v1":
+        raise RuntimeError("formal environment_variant must be single_round_v1")
+    return "single_round_v1"
 
 
 def _configured_dimensions(
@@ -112,7 +114,7 @@ def validate_checkpoint_environment(
             "are incompatible"
         )
     expected_variant = _environment_variant(env_config)
-    checkpoint_variant = str(extra.get("environment_variant", "direct_v2_3"))
+    checkpoint_variant = str(extra.get("environment_variant"))
     if checkpoint_variant != expected_variant:
         raise RuntimeError(
             "checkpoint environment_variant mismatch: expected "
@@ -129,7 +131,7 @@ def validate_checkpoint_for_resume(
     _validate_common_checkpoint_contract(state, env_config, algorithm_config)
     expected_variant = _environment_variant(env_config)
     checkpoint_variant = str(
-        _checkpoint_extra(state).get("environment_variant", "direct_v2_3")
+        _checkpoint_extra(state).get("environment_variant")
     )
     if checkpoint_variant != expected_variant:
         raise RuntimeError(
@@ -153,44 +155,25 @@ def validate_checkpoint_for_evaluation(
     state: dict[str, Any],
     env_config: dict[str, Any],
     algorithm_config: dict[str, Any],
-    allow_cross_variant: bool = False,
 ) -> None:
-    """Validate strict evaluation, optionally allowing only variant transfer."""
+    """Validate strict single-round evaluation compatibility."""
     _validate_common_checkpoint_contract(state, env_config, algorithm_config)
     target_variant = _environment_variant(env_config)
     checkpoint_variant = str(
-        _checkpoint_extra(state).get("environment_variant", "direct_v2_3")
+        _checkpoint_extra(state).get("environment_variant")
     )
-    if checkpoint_variant != target_variant and not allow_cross_variant:
+    if checkpoint_variant != target_variant:
         raise RuntimeError(
             "checkpoint environment_variant mismatch: expected "
-            f"{target_variant!r}, got {checkpoint_variant!r}; pass explicit "
-            "allow_cross_variant=True only for policy-transfer evaluation"
+            f"{target_variant!r}, got {checkpoint_variant!r}"
         )
 
 
-def evaluation_selection_key(
-    record: dict[str, Any], environment_variant: str
-) -> tuple[float, ...]:
-    """Return the variant-specific lexicographic best-checkpoint key."""
-    if environment_variant in {"persistent_wave_v1", "persistent_wave_v2"}:
-        waves_cleared = record.get(
-            "average_waves_cleared", record.get("mean_waves_cleared", 0.0)
-        )
-        final_clear = record.get(
-            "clear_wave_3_probability", record.get("win_rate", 0.0)
-        )
-        return (
-            float(final_clear),
-            float(waves_cleared),
-            float(record["average_return"]),
-            -float(record["average_red_loss"]),
-        )
-    return (
-        float(record["win_rate"]),
-        float(record["average_return"]),
-        -float(record["average_red_loss"]),
-    )
+def evaluation_selection_key(record: dict[str, Any]) -> tuple[float, float, float]:
+    """Rank single-round checkpoints by win, return, then fewer Red losses."""
+    return (float(record["win_rate"]), float(record["average_return"]),
+            -float(record["average_red_loss"]))
+
 
 
 __all__ = [

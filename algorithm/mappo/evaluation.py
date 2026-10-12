@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Iterable
-import warnings
 
 import torch
 
@@ -19,9 +18,10 @@ def evaluate_mappo_checkpoint(
     environment_config: dict[str, Any],
     device: str,
     evaluation_seeds: Iterable[int],
-    allow_cross_variant: bool = False,
 ) -> dict[str, Any]:
     """Load one checkpoint and evaluate it under an explicit target protocol."""
+    if torch.device(device).type != "cuda" or not torch.cuda.is_available():
+        raise RuntimeError("CUDA is mandatory for checkpoint evaluation")
     checkpoint = Path(checkpoint_path)
     seeds = [int(seed) for seed in evaluation_seeds]
     if not seeds:
@@ -35,7 +35,6 @@ def evaluate_mappo_checkpoint(
         state,
         environment_config,
         algorithm_config,
-        allow_cross_variant=allow_cross_variant,
     )
     extra = state.get("extra", {})
     required_protocol_fields = (
@@ -66,11 +65,9 @@ def evaluate_mappo_checkpoint(
                 f"{provided_algorithm_hash!r}"
             )
     else:
-        warnings.warn(
-            "legacy/incomplete checkpoint protocol metadata; evaluation is "
-            "diagnostic only and cannot be formally aggregated",
-            RuntimeWarning,
-        )
+        raise RuntimeError("checkpoint protocol metadata is incomplete")
+    if extra["environment_config_sha256"] != config_sha256(environment_config):
+        raise RuntimeError("checkpoint environment_config_sha256 mismatch")
     effective_hidden_dim = extra.get("effective_hidden_dim")
     if effective_hidden_dim is None:
         first_weight = state.get("actor", {}).get("backbone.0.weight")
@@ -92,9 +89,9 @@ def evaluate_mappo_checkpoint(
     result: dict[str, Any] = dict(
         evaluate(trainer, environment_config, seeds)
     )
-    checkpoint_variant = str(extra.get("environment_variant", "direct_v2_3"))
+    checkpoint_variant = str(extra.get("environment_variant"))
     evaluation_variant = str(
-        environment_config.get("environment_variant", "direct_v2_3")
+        environment_config.get("environment_variant")
     )
     network = algorithm_config["network"]
     result.update({

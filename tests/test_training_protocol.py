@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def configs():
     environment = yaml.safe_load(
-        (ROOT / "configs/combat_environment.yaml").read_text(encoding="utf-8")
+        (ROOT / "configs/single_round_environment.yaml").read_text(encoding="utf-8")
     )
     algorithm = yaml.safe_load(
         (ROOT / "configs/mappo.yaml").read_text(encoding="utf-8")
