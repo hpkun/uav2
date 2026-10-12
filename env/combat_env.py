@@ -1,4 +1,4 @@
-"""Single-round team combat with the V2.3 battle foundations."""
+"""Fixed 4v4 single-round combat with a per-aircraft 1-second cooldown."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -23,7 +23,7 @@ DEFAULT_COMBAT_CONFIG = PROJECT_ROOT / "configs/single_round_environment.yaml"
 
 
 class MultiUAVCombatEnv:
-    """Learned Red UAVs versus deterministic nearest-target Blue UAVs."""
+    """Four learned Red UAVs versus four deterministic nearest-target Blue UAVs."""
 
     team_size, observation_dim, action_dim = 4, OBSERVATION_DIM, 3
     environment_version = ENVIRONMENT_VERSION
@@ -38,13 +38,12 @@ class MultiUAVCombatEnv:
         self.environment_variant = self.config.get("environment_variant")
         if self.environment_variant != "single_round_v2":
             raise ValueError("environment_variant must be single_round_v2")
-        self.team_size = int(self.config["scenario"]["team_size"])
-        if self.team_size != 4:
+        if self.config["scenario"]["team_size"] != 4:
             raise ValueError("environment_variant/team_size mismatch")
         self.spec = aircraft_spec(self.config)
         self.observation_dim = observation_dim_from_config(self.config["observation"])
-        if self.observation_dim != 13 * self.team_size:
-            raise ValueError("single-round observation_dim/team_size mismatch")
+        if self.observation_dim != 52:
+            raise ValueError("single_round_v2 requires observation_dim=52")
         self.dt = float(self.config["simulation"]["dt"])
         self.cooldown_steps = attack_cooldown_steps(self.config)
         self.max_steps = int(self.config["simulation"]["max_steps"])
@@ -59,7 +58,6 @@ class MultiUAVCombatEnv:
         elif policy_type == "ground_aware_nearest_target":
             self.fixed_policy = GroundAwareNearestTargetPursuitPolicy(
                 self.config["blue_policy"], self.config["action"], self.config["aircraft"],
-                team_size=self.team_size,
             )
         else:
             raise ValueError(f"unsupported blue_policy.type: {policy_type!r}")

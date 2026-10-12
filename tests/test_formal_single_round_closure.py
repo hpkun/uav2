@@ -157,7 +157,7 @@ def test_audit_baseline_and_dirty_index_independence(tmp_path, monkeypatch):
     name = 'env/dynamics.py'
     path = tmp_path / name
     path.parent.mkdir(); path.write_bytes(audit.baseline_content(ROOT, name))
-    monkeypatch.setattr(audit, 'baseline_blobs', lambda _: audit_baseline)
+    monkeypatch.setattr(audit, 'baseline_blobs', lambda _, commit=audit.PRE_CADENCE_COMMIT: audit_baseline)
     audit_baseline = {name: audit.blob_hash(path)}
     audit.compare_frozen_files(tmp_path, [name])
     path.write_bytes(b'changed and staged or unstaged')
@@ -172,7 +172,7 @@ def test_changed_files_uses_committed_baseline_to_head(monkeypatch):
         return 'M\tenv/combat_env.py\nR100\tenv/persistent_env.py\tlegacy/env/persistent_env.py\n'
     monkeypatch.setattr(audit.subprocess, 'check_output', command)
     rows = audit.changed_files(ROOT)
-    assert calls == [['git', 'diff', '--name-status', '-M', audit.BASE_COMMIT, 'HEAD']]
+    assert calls == [['git', 'diff', '--name-status', '-M', audit.PRE_CADENCE_COMMIT, 'HEAD']]
     assert rows[1]['original_path'] == 'env/persistent_env.py'
     assert audit.legacy_original('README_original.md') == 'README.md'
     assert audit.legacy_original('env/persistent_env.py') == 'env/persistent_env.py'
@@ -191,21 +191,7 @@ def test_committed_clean_clone_audit_is_repeatable_and_ignores_staged_changes(tm
         return subprocess.check_output(['git', *args], cwd=clone, stderr=subprocess.STDOUT)
     subprocess.run(['git', 'clone', '--shared', str(ROOT), str(clone)], check=True,
                    capture_output=True, timeout=60)
-    # Commit only inside this disposable clone to simulate this patch after commit.
-    for folder in ('algorithm', 'env', 'tests', 'tools', 'configs', 'legacy'):
-        for path in (ROOT / folder).rglob('*' if folder == 'legacy' else '*.yaml' if folder == 'configs' else '*.py'):
-            if not path.is_file(): continue
-            if '__pycache__' in path.parts: continue
-            destination = clone / path.relative_to(ROOT)
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            destination.write_bytes(path.read_bytes())
-    baseline = ROOT / 'reports/cadence_v2_baseline.json'
-    destination = clone / 'reports/cadence_v2_baseline.json'
-    destination.parent.mkdir(exist_ok=True)
-    destination.write_bytes(baseline.read_bytes())
-    git('add', 'algorithm', 'env', 'tests', 'tools', 'configs', 'legacy', 'reports/cadence_v2_baseline.json')
-    git('-c', 'user.name=Protocol Test', '-c', 'user.email=protocol-test@example.invalid',
-        'commit', '-m', 'Temporary protocol snapshot for reproducibility test')
+    # Test only the committed checkout: no worktree copies, staging, or temporary commit.
     assert not git('status', '--porcelain').strip()
     command = [sys.executable, str(clone / 'tools/audit_single_round.py')]
     completed = subprocess.run(command, cwd=clone, capture_output=True, text=True, timeout=60)

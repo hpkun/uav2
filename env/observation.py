@@ -1,4 +1,4 @@
-"""Local slot observations: 52D for 4v4 and 78D for 6v6."""
+"""Exact 52-dimensional paper-constrained local observation contract."""
 from __future__ import annotations
 
 import numpy as np
@@ -15,10 +15,7 @@ OWN_FIRE_READY_DIM = 1
 
 def observation_dim_from_config(cfg: dict) -> int:
     """Resolve the opt-in schema without changing the legacy 52D default."""
-    team_size = int(cfg.get("team_size", 4))
-    if team_size not in (4, 6):
-        raise ValueError("observation team_size must be 4 or 6")
-    return 13 * team_size + (
+    return BASE_OBSERVATION_DIM + (
         OWN_FIRE_READY_DIM if bool(cfg.get("include_own_fire_ready", False)) else 0
     )
 
@@ -88,9 +85,7 @@ def build_team_observations(
     own_fire_ready: np.ndarray | None = None,
 ) -> np.ndarray:
     include_ready = bool(cfg.get("include_own_fire_ready", False))
-    if len(team) != len(opponents):
-        raise ValueError("observation teams must have equal size")
-    observation_dim = observation_dim_from_config({**cfg, "team_size": len(team)})
+    observation_dim = observation_dim_from_config(cfg)
     phis = (
         np.zeros(len(team), dtype=float)
         if last_executed_phi is None else np.asarray(last_executed_phi, dtype=float)
@@ -127,7 +122,7 @@ def build_team_observations(
             values = np.concatenate((values, np.asarray([ready[own_index]], np.float32)))
         observations.append(values.astype(np.float32))
     result = np.stack(observations)
-    if result.shape != (len(team), observation_dim) or not np.all(np.isfinite(result)):
+    if result.shape != (4, observation_dim) or not np.all(np.isfinite(result)):
         raise FloatingPointError("invalid combat observation")
     return result
 

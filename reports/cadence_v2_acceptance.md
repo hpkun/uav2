@@ -1,114 +1,114 @@
-# single_round_v2 攻击节奏验收
+# single_round_v2 最终科研实验收口验收
 
-本轮按用户明确答复，将正式任务从上轮 6v6/78D 恢复为 **4v4/52D**。
-v1 和 6v6 材料新增归档到 `legacy/single_round_v1/`；原有 legacy 文件未改。
-在原 4v4 配置基础上，只有 variant 与 attack 配置变化。底层已有团队大小泛化源码
-保留原样，没有为了本轮恢复 4v4 去改写 observation/scenario/Blue policy。
+正式环境最终严格固定 **4v4 / 52D observation / 3D action**，version=2.3，variant=single_round_v2，
+dt=0.1s，max_steps=1000。1.0s / 10-step per-aircraft cooldown 完整保留。
+本轮移除误混入正式 runtime 的 6v6 泛化，恢复原 4v4 数值语义；不修改已经正确的 cadence。
 
-## 文件与实现
+## 修改文件与泛化移除
 
-本轮正式修改：`env/combat_env.py`、`env/config.py`、`env/factory.py`、`env/__init__.py`、
-`algorithm/common/protocol.py`、`algorithm/madsac/protocol.py`、
-`algorithm/train_mappo.py`、`algorithm/evaluate_mappo.py`、`configs/single_round_environment.yaml`。
-记录工具 `tools/record_single_round_match.py` 的观察 hook 改为新方法名；
-`tools/audit_single_round.py` 增加本轮冻结和新归档校验；新增 `tools/validate_attack_cadence.py`。
-README 改为正式 v2 协议。没有修改网络/trainer 或算法超参数配置。
+- `env/observation.py`：恢复不可变 pre-cadence 源码；固定基础 52D、固定输出 (4,52)，不根据 team_size 推导 78D。
+- `env/scenario.py`：恢复 pre-cadence 源码，严格要求 team_size=4、四个 formation offsets。
+- `env/fixed_policy.py`：恢复 pre-cadence 源码，去除 team_size 构造参数，三个内部诊断数组固定 (4,)。
+- `env/combat_env.py`：保留 v2 cooldown；不再从 config 赋值 self.team_size；初始化明确检查 4/52，不向 GroundAware 传 team_size。
+- `algorithm/common/protocol.py`：显式锁定 52/3/4，去除 13×team_size 表达，保留 v2、dt、时限和 attack 严格校验。
+- `algorithm/mappo/runner.py`：完整恢复 pre-cadence 源码，维度依据固定环境常量，先执行公共 validator。
+- `algorithm/madsac/protocol.py`：配置与 checkpoint 明确锁定 52/3/4，v2 身份、SHA、seed、50 episodes、44M/770001 全部保留。
+- `algorithm/common/evaluator.py`、`algorithm/madsac/evaluation.py`：恢复 pre-cadence 源码，return vector/buffer 固定四个 agents。
+- `algorithm/common/vector_env.py`：恢复 pre-cadence 源码；alive masks 固定 (num_envs,4)，没有动态重建 agent 数量的契约。
+- `tools/audit_single_round.py`：19 文件直接比较 immutable pre-cadence commit，配置 exact delta，分离历史 archive provenance。
+- `tests/test_formal_single_round_closure.py`：clean-clone regression 去除复制、整体 add、临时 commit；更新 baseline 比较测试。
+- 新增 `tests/test_fixed_four_runtime.py`：九项固定 4v4/不可变来源回归。
+- 删除 `reports/cadence_v2_baseline.json` 自声明冻结清单；更新 README 和本报告。
 
-新增 `tests/test_attack_cadence.py`；旧 `test_combat_environment.py` 的 entry/rearm 测试
-重写为连续窗口 cooldown 回归，未删除。`test_single_round_protocol.py` 更新正式 variant
-并增加旧 v1/6v6 拒绝用例。clean-clone 审计测试补充复制新冻结清单与归档。
-6v6 专用测试保留于新历史归档，不作为正式 4v4 测试执行。
+现有 legacy 文件没有修改；历史 6v6 文件继续隔离，不能进入正式 factory、训练或默认 pytest。
+没有修改任何正式网络/trainer/超参数，没有改变 vector auto-reset/terminal transition/seed 算法。
 
-## 精确 cadence
+## 不可变基线与 exact delta
 
-使用 `red_next_fire_step`、`blue_next_fire_step`，shape 均 `(4,)`、dtype `int64`。
-reset 全部归零。运动完成后 steps 增加 1，在攻击结算时检查整数 clock。
-存活攻击机存在合法目标且 `steps >= next_fire_step[i]` 时，对最近合法目标进行一次 attempt；
-无论 hit 或 miss，写入 `next_fire_step[i] = steps + 10`。
+正式 immediate pre-cadence baseline：
+`89fd4c54d07205bd0952eb972cf133b4a41349f7`。
+审计通过 git ls-tree / git show 从该已提交身份读取 blob/配置，不依赖当前 index 或工作区自声明 hash。
 
-首次合法 step=1 立即攻击，随后 next_fire_step=11；step 2–10 不允许，step 11 允许，
-没有延迟到 step 12。持续合法无需离窗再进入。
-无合法目标时 clock 不被清除或延后；死亡机不攻击；无弹药约束，无 fire actor action。
-双方 attempt 先分别生成，再沿用原 combat resolver 同步结算。
+严格匹配的 **19 个文件**：
 
-正式配置新增独立顶层 `attack.cadence=fixed_cooldown`、`attack.cooldown_seconds=1.0`。
-WeaponEnvelope 接收的 weapon 配置原样保留。公共 validator 要求 v2、2.3、dt=0.1、
-1000 steps、4 agents、52D/3D，并验证整数换算得到 cooldown_steps=10。
-非正冷却、非整数换算、错误 cadence、非 1 秒冷却均拒绝。
-底层短 max_steps 测试仍可使用合法 v2 配置。
+- env/control.py、dynamics.py、integrator.py、weapon.py、reward.py、observation.py、scenario.py、fixed_policy.py、models.py、geometry.py、math_utils.py。
+- algorithm/common/evaluator.py、vector_env.py。
+- algorithm/mappo/networks.py、trainer.py、runner.py。
+- algorithm/madsac/networks.py、trainer.py、evaluation.py。
 
-保留全部现有 firing/combat metrics，新增两侧 step_cooldown_blocked、
-cooldown_blocked_agent_steps 累计值及 next_fire_steps 副本。
-只在存活机当前有合法目标但 clock 未到期时计 blocked agent-step。
-这些 diagnostics 不加入 observation。
+全部与 pre-cadence commit Git blob 等价（按 Git 文本 CRLF/LF 规范比较）。没有放宽 frozen list，
+没有 TEAM_SIZE_REFACTORS 豁免。尤其 weapon.py、reward.py、observation.py、scenario.py、fixed_policy.py 全部一致。
+Weapon docstring、true-3D gate、4000m 射程、hit probability/Gaussian sampling 未改。
+R1–R4 数值、公式与结算顺序未改，不增加 cadence/fire/hit/safety/ammo reward。
 
-## 专项结果
+环境配置也直接读取 PRE_CADENCE_COMMIT 中正式 4v4 配置，对照当前完整字典：
+**只有 environment_variant 从 single_round_v1 改为 single_round_v2，以及新增 attack 段**。
+simulation、action、aircraft、arena、scenario、weapon、reward、observation、blue_policy 完全一致。
+MAPPO/MADSAC 算法配置完整字典也与 pre-cadence 配置一致。
 
-`python tools/validate_attack_cadence.py` 在未冻结运动的 25 个真实 simulation steps 中，
-仅固定现有 hit hook 为 miss，实际输出 **[1, 11, 21]**，3 次 attempt，22 个 blocked agent-steps，
-observation shape `(4,52)`。证据：`outputs/cadence_v2_validation/cadence.json`。
+历史 archive provenance 独立保留：
+`8d09df1fd1e6d2425b712d0c336e9525cd313c4c`，435 个原始历史文件匹配该来源。
+九个较新 v1/6v6 快照原本含上一轮未提交的泛化，因此不能伪称来自正式 4v4 baseline；
+它们改为直接匹配已存在的 archive snapshot commit
+`b80337fd7aad8a37865f10e3f2cb6451d2775b96` 中对应 legacy blob，内容全部保持不变。
+这第三个身份仅用于历史快照溯源，不豁免任何正式 runtime 冻结校验。
 
-专项自动测试确认：
+## Clean committed clone regression
 
-- 首次立即攻击；step 10 blocked、step 11 allowed，持续窗口可以再次攻击。
-- step 2–5 离窗、step 6 回到窗口不会提前 rearm，到 step 11 才能攻击。
-- 更换 Blue 目标不能绕过同一 Red 攻击机 clock。
-- hit/miss 均写入 step+10；目标死亡也保留已写入 clock。
-- reset 清零；冷却到期没有目标不延后 clock，目标重现后立即攻击。
-- 每机 clock 独立；死亡机不攻击；nearest eligible 目标选择未变。
-- Red/Blue 同等几何的 attempt 序列均为 [1,11,21]。
-- deterministic mutual hit 时双方均生成 attempt，双方均被击杀并 draw，没有先手消除反击。
-- cooldown 数组变化不改变 observation；原 R3/R4 源码数值比较一致；R1/R2 回归通过。
+测试直接 local clone 当前 committed HEAD，不复制本轮未提交文件，不 add 整体 runtime，不创建临时提交。
+clone 初始 clean；两次 structural audit JSON 完全相同；审计后 tracked working tree 仍 clean。
+随后只在临时 clone 中故意修改/stage dynamics.py，immutable frozen comparison 明确拒绝。
+单独执行结果：**1 passed in 7.58s**，日志 `reports/cadence_v2_clean_clone.txt`。
 
-## 冻结与协议审计
+本次被 clone 的已提交 HEAD 为 b80337fd7aad8a37865f10e3f2cb6451d2775b96；
+本轮修改按禁止提交的要求仍留在工作区。该回归确实测试 committed source 自身，没有模拟未提交 patch。
+新工作区实现另行通过 19 文件 pre-cadence 严格审计；后续提交后同一测试会直接 clone 新 HEAD。
+changed_files.csv 只记录 PRE_CADENCE_COMMIT→当前 HEAD 的已提交差异，不伪称包含本轮尚未提交修复。
 
-**Observation 仍为 52D，未增加 ready/cooldown 特征。R1–R4 数值、公式与结算位置未改。**
-本轮全部 11 个环境基础文件加四个 MAPPO/MADSAC networks/trainer 文件，与
-`reports/cadence_v2_baseline.json` 记录的修改前 Git 文本 blob 一致。
-其中 `weapon.py` 未编辑，geometry、hit_threshold、Gaussian sampling、射程与 true-3D gate 均未变。
-control、dynamics、integrator、aircraft、arena、scenario、Blue policy 同样未因本轮变化。
+## Cooldown 与固定规模回归
 
-历史 baseline 仍为 `8d09df1fd1e6d2425b712d0c336e9525cd313c4c`。
-Observation/scenario/fixed_policy 与历史 initial baseline 的差异来自上一轮获授权的团队大小泛化，
-审计明确显示这些既有差异；本轮 15 文件冻结校验另行严格证明没有追加修改。
-不存在把这三个文件伪称为与 initial baseline byte-identical 的情况。
-新归档 9 个文件均与修改前快照 hash 匹配，原 435 个历史文件仍匹配原 baseline。
+`python tools/validate_attack_cadence.py`：连续 25 个真实 simulation steps、deterministic miss，
+实际 attempts **[1,11,21]**，3 次 attempt、22 blocked agent-steps，shape (4,52)。
+首次合法 step 1 立即攻击，step 10 blocked、step 11 allowed。时钟仍为两侧 (4,) int64 next_fire_step。
 
-正式 runtime 仅允许 `single_round_v2`，factory 拒绝 v1 和 6v6 v1；
-MAPPO/MADSAC 的 training、evaluation、checkpoint validator 共用 v2 定义。
-旧 v1 checkpoint 即使同为 52D，也因 variant/config SHA 不符被明确拒绝。
-没有 silent compatibility、自动迁移或 legacy resume 旁路。
-正式 combat_env 不 import/use FireState，不使用 `.armed`、red/blue_fire_states 或 `_entry_attempts`。
-冻结 weapon.py 保留历史 FireState 类定义，但不被正式环境导入。
+完整 cadence 测试继续通过：exit/re-entry、target switch 不能绕过；hit/miss 均进入冷却；
+reset 清零；到期无目标不延后 clock；每机独立；死亡机不攻击；Red/Blue 对称；
+同 step mutual hit 同步结算；无限抽象弹药，无 actor fire action，无 cooldown observation。
 
+新增固定规模测试确认 observation 固定 52/输出 (4,52)，scenario/factory 拒绝六机，
+GroundAware 固定构造接口与 (4,) masks，MAPPO/MADSAC 52/3/4 pass、78/3/6 reject，
+evaluator 六元素 return vector reject，正式 configs 无六机配置，legacy 不影响 import/pytest/runtime。
+
+旧 v1 config/checkpoint 在 training、evaluation、MAPPO resume 和 checkpoint validation 中继续 fail-closed，
+即使仍为 52D 也不能进入 v2。v2 config SHA 与 v1 不同，没有兼容 fallback 或自动迁移。
+
+## 验证结果
+
+完整正式测试：**420 passed in 40.46s**。
+命令 `python -m pytest -q --basetemp=tmp/fixed_four_final`，日志 `reports/cadence_v2_fixed_four_pytest.txt`。
+Cadence 专项验证、structural audit、独立 clean-clone regression 全部通过。
 正式 env/algorithm/configs/README 共 **43 个文件，多波次关键词 0 命中**。
-源码、测试、工具 AST 检查通过；clean-clone 连续结构审计可复现；git diff --check 通过。
-审计证据：`outputs/cadence_v2_audit/single_round_audit.json`。
+无可进入训练的 6v6 分支，无正式 FireState.armed 或 _entry_attempts 依赖。
+Frozen weapon.py 中历史 FireState 类定义保留原样，但正式环境不导入/使用它。
 
-## 正式测试与 CUDA smoke
-
-完整正式 pytest：**411 passed in 58.08s**。
-命令 `python -m pytest -q --basetemp=tmp/cadence_v2_final`，日志 `reports/cadence_v2_pytest.txt`。
-最后补强缺失 attack 配置段与 bool 冷却值的 fail-closed 后，cadence/protocol 专项复查
-**66 passed in 13.26s**；最终结构审计再次通过。
-
-两套 CUDA smoke 均采样 **1200 environment transitions**：
+两套 CUDA smoke 各 **1200 environment transitions**，使用 PowerShell uav Conda 环境：
 
 | 方法 | 完成场次 | episode lengths | terminal reasons | 全部 reset seeds |
 |---|---:|---|---|---|
 | MAPPO | 9 | 147,118,125,117,117,115,124,115,111 | blue_win×6、red_win×3 | 0–9 |
 | MADSAC | 10 | 125,106,118,124,116,96,106,115,118,147 | blue_win×9、red_win×1 | 5301–5311 |
 
-两套 worker class 均为 MultiUAVCombatEnv，Blue policy 均为 GroundAwareNearestTargetPursuitPolicy；
-4v4、52D/3D、max_steps=1000，episode info 无 wave 字段。
-每次终局之后，新 seed 的完整 reset observation 与独立 reference reset 完全一致，
-双方恢复 alive=4、steps=0；terminal transition observation 与 reset observation 不混淆。
-Seed 无复用；auto-reset 与 terminal transition 语义未修改。
+两套 worker 均为 MultiUAVCombatEnv，Blue 为 GroundAwareNearestTargetPursuitPolicy，
+52/3/4、max_steps=1000。每次终局后新 seed reset 与独立 reset 完全一致，双方 alive=4、steps=0；
+保留的 terminal transition observation 与 reset observation 分离，seed 无复用，episode info 无 wave 字段。
+Smoke 结果与上一轮相同，4v4 数值和 cadence 未变化。
+证据：`outputs/fixed_four_v2_smoke/evidence.json`。
 
-证据：`outputs/cadence_v2_smoke/evidence.json`。
-追加 CUDA 审计也通过 MAPPO 完整协议 checkpoint evaluation、MADSAC 严格 checkpoint 检查与
-deterministic/stochastic evaluation。Smoke 沿用现有降低网络/rollout/evaluation 成本的机制，
-正式算法配置未调参。
+Checkpoint audit 验证 MAPPO 完整 v2 协议 evaluation，以及 MADSAC 严格 checkpoint protocol 和
+deterministic/stochastic evaluation。结果保存在 `outputs/fixed_four_v2_checkpoint_audit/`。
+Structural 19-file/config/archive 证据在 `outputs/fixed_four_v2_structural_audit/`。
 
-**没有启动任何正式长训练。** 本轮仅运行两个 1200-step smoke、测试、专项 cadence 验证和审计。
-1 秒冷却是项目建模扩展，没有声称该数值由 MADSAC 论文规定。
+**没有启动正式 3M 或其它长训练，没有执行提交、推送、分支或远程操作。**
+只执行了本地 clean-clone 回归要求的复制式 clone，以及临时 clone 中明确要求的 frozen-file staging 测试。
+最终正式 runtime 只有固定 4v4 single_round_v2；相对原正式 4v4 v1，唯一战斗语义变化仍为
+exit-to-rearm → fixed 1.0 s per-aircraft cooldown。

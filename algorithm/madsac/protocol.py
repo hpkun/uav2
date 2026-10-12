@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from algorithm.common.protocol import config_sha256, validate_single_round_environment_config
-from env.observation import observation_dim_from_config
 from .trainer import MADSAC_IMPL_VERSION
 
 
@@ -11,8 +10,7 @@ def validate_madsac_config(env_config: dict, algorithm_config: dict) -> None:
     n, t, i = algorithm_config["network"], algorithm_config["training"], algorithm_config["implementation"]
     if algorithm_config.get("algorithm") != "madsac":
         raise RuntimeError("algorithm config is not madsac")
-    expected = (observation_dim_from_config(env_config["observation"]), 3,
-                int(env_config["scenario"]["team_size"]))
+    expected = (52, 3, 4)
     actual = (int(n["observation_dim"]), int(n["action_dim"]), int(n["num_agents"]))
     if actual != expected:
         raise RuntimeError(f"MADSAC dimension mismatch: {actual} vs {expected}")
@@ -55,8 +53,7 @@ def validate_madsac_checkpoint(
         ),
         "environment_config_sha256": config_sha256(env_config),
         "algorithm_config_sha256": config_sha256(algorithm_config),
-        "observation_dim": int(algorithm_config["network"]["observation_dim"]),
-        "action_dim": 3, "num_agents": int(algorithm_config["network"]["num_agents"]),
+        "observation_dim": 52, "action_dim": 3, "num_agents": 4,
     }
     for key, value in expected.items():
         if checks[key] != value:

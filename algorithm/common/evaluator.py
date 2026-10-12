@@ -15,8 +15,8 @@ DEFAULT_COMBAT_CONFIG = PROJECT_ROOT / "configs/single_round_environment.yaml"
 def episode_return_metrics(agent_returns: np.ndarray) -> tuple[float, float]:
     """Team sum and per-agent mean return diagnostics."""
     values = np.asarray(agent_returns, dtype=float)
-    if values.ndim != 1 or values.size not in (4, 6):
-        raise ValueError("agent_returns must be a 4- or 6-agent vector")
+    if values.shape != (4,):
+        raise ValueError("agent_returns must have shape (4,)")
     return float(values.sum()), float(values.mean())
 
 
@@ -70,7 +70,7 @@ def evaluate(actor, config=DEFAULT_COMBAT_CONFIG, seeds=range(10_000_000, 10_000
     for seed in seeds:
         env = make_combat_environment(config)
         observation, _ = env.reset(int(seed))
-        agent_returns = np.zeros(env.team_size, dtype=float)
+        agent_returns = np.zeros(4, dtype=float)
         while True:
             if hasattr(actor, "policy_statistics"):
                 policy_rows.append(actor.policy_statistics(

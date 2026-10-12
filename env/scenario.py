@@ -1,4 +1,4 @@
-"""Random-diameter team initialization for the V2.3 battle model."""
+"""Random-diameter 4v4 initialization for the V2.3 benchmark."""
 from __future__ import annotations
 
 import numpy as np
@@ -19,8 +19,8 @@ def random_combat_states(
     team_size: int = 4,
 ) -> tuple[list[AircraftState], list[AircraftState], float]:
     """Place opposing formations at the ends of a random 8-km diameter."""
-    if team_size not in (4, 6) or len(formation_offsets) != team_size:
-        raise ValueError("team_size must be 4 or 6 with one formation offset per aircraft")
+    if team_size != 4 or len(formation_offsets) != team_size:
+        raise ValueError("this benchmark requires four aircraft per team")
     radial_angle = float(rng.uniform(-np.pi, np.pi))
     radial = np.array([np.cos(radial_angle), np.sin(radial_angle)])
     lateral = np.array([-radial[1], radial[0]])

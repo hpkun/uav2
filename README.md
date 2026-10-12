@@ -5,6 +5,9 @@ episode, 52D observation, 3D flight action, dt=0.1, max_steps=1000. Red or Blue
 elimination terminates immediately; mutual elimination is a draw. Unresolved
 combat truncates with `red_failure_timeout`. Vector auto-reset starts a new
 independent 4v4 episode with a fresh seed and preserves the terminal transition.
+The formal runtime is strictly fixed to four aircraft per side. Team-size
+generalization is removed; six-aircraft scenarios, networks and return vectors
+are rejected by the formal protocol and environment contracts.
 
 Blue remains `ground_aware_nearest_target`. Dynamics, controller, RK4, aircraft
 limits, radius=5000, 8 km opposing initialization, weapon geometry/hit model,
@@ -70,12 +73,22 @@ V1 and 6v6 materials are preserved under legacy/single_round_v1, outside formal
 imports and default pytest collection. Existing historical archive files are
 unchanged. Previous acceptance documents in reports describe their own versions.
 
-The audit retains baseline commit 8d09df1fd1e6d2425b712d0c336e9525cd313c4c for
-historical provenance. reports/cadence_v2_baseline.json freezes the exact
-pre-cadence working-tree sources, including the earlier team-size refactors;
-all 11 environment foundations and four network/trainer files must match it.
-New archived snapshots have individual hashes; the original 435 archive files
-still match the historical baseline. changed_files.csv is baseline→HEAD only.
-Structural audit does not require local checkpoints and works in clean clones.
+The audit separates the historical archive baseline
+8d09df1fd1e6d2425b712d0c336e9525cd313c4c from the immutable pre-cadence formal
+baseline 89fd4c54d07205bd0952eb972cf133b4a41349f7. Nineteen frozen runtime files
+must match pre-cadence Git blobs exactly, including observation, scenario,
+GroundAware policy, common evaluator/vector environment, MAPPO runner, and both
+networks/trainers. No team-size exceptions or self-declared baseline hashes are used.
+The environment config may differ only in variant and the added attack section.
+The original 435 archive files match the historical baseline; nine newer v1/6v6
+snapshots match their committed archive identity b80337fd7aad8a37865f10e3f2cb6451d2775b96.
+Existing legacy source content remains unchanged. changed_files.csv describes
+pre-cadence→HEAD committed changes. Structural audit requires no local checkpoints
+and writes ignored output files, leaving a clean checkout clean.
+
+The clean-clone regression directly clones the local committed HEAD, audits it
+twice, compares the JSON results and verifies cleanliness. It does not copy
+uncommitted worktree files or create a temporary commit. Its deliberate frozen-file
+staging check cannot change the immutable comparison baseline.
 
 See reports/cadence_v2_acceptance.md for the detailed cadence acceptance results.

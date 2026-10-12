@@ -18,13 +18,12 @@ def validate_single_round_environment_config(env_config: dict[str, Any]) -> None
     variant = env_config.get("environment_variant")
     if variant != "single_round_v2":
         raise RuntimeError(f"formal single-round environment_variant mismatch: {variant!r}")
-    team_size = 4
     checks = {
         "environment_version": (env_config.get("environment_version"), "2.3"),
         "simulation.dt": (env_config.get("simulation", {}).get("dt"), 0.1),
         "simulation.max_steps": (env_config.get("simulation", {}).get("max_steps"), 1000),
-        "scenario.team_size": (env_config.get("scenario", {}).get("team_size"), team_size),
-        "observation_dim": (observation_dim_from_config(env_config.get("observation", {})), 13 * team_size),
+        "scenario.team_size": (env_config.get("scenario", {}).get("team_size"), 4),
+        "observation_dim": (observation_dim_from_config(env_config.get("observation", {})), 52),
         "action_dim": (env_config.get("action_dim", MultiUAVCombatEnv.action_dim), 3),
         "attack.cadence": (env_config.get("attack", {}).get("cadence"), "fixed_cooldown"),
         "attack.cooldown_seconds": (env_config.get("attack", {}).get("cooldown_seconds"), 1.0),
