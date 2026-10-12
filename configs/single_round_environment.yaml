@@ -1,5 +1,5 @@
-environment_version: '2.3'
-environment_variant: single_round_v2
+environment_version: '2.4'
+environment_variant: single_round_v3
 attack:
   cadence: fixed_cooldown
   cooldown_seconds: 1.0
@@ -7,15 +7,16 @@ simulation:
   dt: 0.1
   max_steps: 1000
 action:
-  command:
-    heading_delta_max: 3.141592653589793
-    pitch_delta_max: 1.0471975511965976
-    speed_delta_max: 50.0
-  controller:
-    heading_time_constant: 2.0
-    pitch_time_constant: 2.0
-    speed_time_constant: 2.0
-    normal_load_max: 8.0
+  mode: direct_physical_control
+  thrust:
+    min: -2.0
+    max: 2.0
+  lift:
+    min: -5.0
+    max: 5.0
+  roll:
+    min: -1.0471975511965976
+    max: 1.0471975511965976
 aircraft:
   v_min: 150.0
   v_max: 300.0
@@ -67,8 +68,16 @@ observation:
   speed_scale: 75.0
   relative_position_scale: 10000.0
 blue_policy:
+  type: direct_ground_aware_nearest_target
   desired_speed: 250.0
+  speed_response_time_seconds: 2.0
+  heading_response_time_seconds: 2.0
+  pitch_response_time_seconds: 2.0
+  max_heading_rate_rad_s: 0.3
+  max_pitch_rate_rad_s: 0.15
   ground_avoidance:
-    guard_time_constants: 2.0
+    recovery_time_seconds: 4.0
     downward_speed_epsilon: 1.0e-06
-  type: ground_aware_nearest_target
+    recovery_lift: 5.0
+task_type: combat
+action_semantics: direct_physical_control

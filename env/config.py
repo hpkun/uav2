@@ -9,16 +9,16 @@ import yaml
 from .models import AircraftSpec
 
 
-ENVIRONMENT_VERSION = "2.3"
+ENVIRONMENT_VERSION = "2.4"
 
 
 def load_config(path: str | Path) -> dict[str, Any]:
-    """Load and validate the active V2.3 environment configuration."""
+    """Load and validate the active V2.4 environment configuration."""
     with Path(path).open("r", encoding="utf-8") as stream:
         config = yaml.safe_load(stream)
     required = {
         "environment_version", "simulation", "action", "aircraft", "arena",
-        "scenario", "weapon", "reward", "observation", "blue_policy",
+        "scenario", "reward", "observation", "task_type", "action_semantics",
     }
     if not isinstance(config, dict) or not required.issubset(config):
         raise ValueError(f"configuration must contain: {sorted(required)}")

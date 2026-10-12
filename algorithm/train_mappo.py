@@ -348,14 +348,21 @@ def main() -> None:
     parser.add_argument("--num-envs", type=int)
     parser.add_argument("--output-dir")
     parser.add_argument("--resume")
+    parser.add_argument("--init-actor-checkpoint")
     parser.add_argument("--env-config", default="configs/single_round_environment.yaml")
     parser.add_argument("--algorithm-config", default="configs/mappo.yaml")
     parser.add_argument("--smoke", action="store_true", default=None)
     args = parser.parse_args()
+    if args.resume and args.init_actor_checkpoint:
+        parser.error("--init-actor-checkpoint cannot be combined with --resume")
     env_path = resolved(args.env_config)
     env_config = yaml.safe_load(env_path.read_text(encoding="utf-8"))
     algorithm_path = resolved(args.algorithm_config)
     algorithm_config = yaml.safe_load(algorithm_path.read_text(encoding="utf-8"))
+    if args.init_actor_checkpoint:
+        from algorithm.mappo.actor_initialization import validate_actor_initialization
+        source_state = torch.load(resolved(args.init_actor_checkpoint), map_location="cpu", weights_only=False)
+        validate_actor_initialization(source_state, env_config)
     configured_seed = int(algorithm_config["training"]["seed"])
     path_seed = configured_seed if args.seed is None else args.seed
     output_dir, resume_checkpoint = resolve_run_paths(
@@ -417,6 +424,13 @@ def main() -> None:
         runtime["smoke"],
     )
     if resume_checkpoint is None:
+        if args.init_actor_checkpoint:
+            from algorithm.mappo.actor_initialization import initialize_actor
+            try:
+                initialize_actor(runner, resolved(args.init_actor_checkpoint))
+            except BaseException:
+                runner.vector.close()
+                raise
         write_yaml_snapshot(runner.output_dir / "env_config.yaml", env_config)
         write_yaml_snapshot(
             runner.output_dir / "algorithm_config.yaml", algorithm_config
@@ -426,6 +440,9 @@ def main() -> None:
             write_yaml_snapshot(path, config)
     startup = runner.startup_summary()
     run_config = {
+        "task_type": env_config["task_type"],
+        "action_semantics": env_config["action_semantics"],
+        "actor_initialization": runner.actor_initialization,
         "device": startup["device"],
         "seed": startup["seed"],
         "num_envs": startup["num_envs_M"],

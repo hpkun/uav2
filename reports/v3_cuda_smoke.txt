@@ -1,0 +1,17 @@
+[START] algorithm=MAPPO | mode=smoke | device=cuda | obs=52 | act=3 | agents=4 | hidden=64 | critic=attention | heads=2 | envs=1 | workers=1 | backend=multiprocess_spawn | seed=0 | total=1200 | rollout=64 | epochs=2 | minibatch=32 | gamma=0.99 | lambda=0.95 | clip=0.2 | variant=single_round_v3 | max_steps=1000
+[EVAL] steps=1200 | return=-39.64 | agent_return=-9.91 | win=0.00 | red_loss=4.00 | ep_len=118.0
+[SMOKE] combat: 1200 CUDA transitions; strict checkpoint evaluation passed
+[START] algorithm=MAPPO | mode=smoke | device=cuda | obs=52 | act=3 | agents=4 | hidden=64 | critic=attention | heads=2 | envs=1 | workers=1 | backend=multiprocess_spawn | seed=101 | total=1200 | rollout=64 | epochs=2 | minibatch=32 | gamma=0.99 | lambda=0.95 | clip=0.2 | variant=pursuit_v1 | max_steps=1000
+[EVAL] task=pursuit | return=-1535492.58 | mean_distance_m=2181.10
+[SMOKE] pursuit: 1200 CUDA transitions; strict checkpoint evaluation passed
+Traceback (most recent call last):
+  File "C:\Users\HPK\Desktop\uav2\tools\smoke_direct_control.py", line 78, in <module>
+    if __name__=='__main__':main()
+  File "C:\Users\HPK\Desktop\uav2\tools\smoke_direct_control.py", line 37, in main
+    assert all(torch.equal(v,runner.trainer.actor.state_dict()[k]) for k,v in source_state['actor'].items())
+  File "C:\Users\HPK\Desktop\uav2\tools\smoke_direct_control.py", line 37, in <genexpr>
+    assert all(torch.equal(v,runner.trainer.actor.state_dict()[k]) for k,v in source_state['actor'].items())
+RuntimeError: Expected all tensors to be on the same device, but got other is on cuda:0, different from other tensors on cpu (when checking argument in method wrapper_CUDA__equal)
+[START] algorithm=MAPPO | mode=smoke | device=cuda | obs=52 | act=3 | agents=4 | hidden=64 | critic=attention | heads=2 | envs=1 | workers=1 | backend=multiprocess_spawn | seed=202 | total=1200 | rollout=64 | epochs=2 | minibatch=32 | gamma=0.99 | lambda=0.95 | clip=0.2 | variant=single_round_v3 | max_steps=1000
+[EVAL] steps=1200 | return=-39.67 | agent_return=-9.92 | win=0.00 | red_loss=4.00 | ep_len=103.0
+[SMOKE] initialized_combat: 1200 CUDA transitions; strict checkpoint evaluation passed

@@ -25,6 +25,11 @@ def config():
     return load_config(ROOT / "configs/single_round_environment.yaml")
 
 
+def legacy_config():
+    import yaml
+    return yaml.safe_load((ROOT/"legacy/single_round_v2/configs/single_round_environment.yaml").read_text(encoding="utf-8"))
+
+
 def state(x=0.0, y=0.0, altitude=3000.0, psi=0.0, theta=0.0,
           speed=225.0, alive=True):
     return AircraftState(x, y, -altitude, speed, theta, psi, alive)
@@ -36,7 +41,7 @@ def one_alive(primary):
 
 def test_version_and_frozen_bottom_level_contract():
     cfg = config()
-    assert cfg["environment_version"] == ENVIRONMENT_VERSION == "2.3"
+    assert cfg["environment_version"] == ENVIRONMENT_VERSION == "2.4"
     assert cfg["simulation"] == {"dt": 0.1, "max_steps": 1000}
     assert cfg["aircraft"] == {
         "v_min": 150.0, "v_max": 300.0,
@@ -47,7 +52,7 @@ def test_version_and_frozen_bottom_level_contract():
 
 
 def test_action_order_and_relative_zero_target():
-    cfg = config()["action"]["command"]
+    cfg = legacy_config()["action"]["command"]
     own = state(psi=0.4, theta=-0.2, speed=231.0)
     zero = action_to_target(own, np.zeros(3), cfg)
     assert (zero.heading, zero.pitch, zero.speed) == pytest.approx(
@@ -65,7 +70,7 @@ def test_action_order_and_relative_zero_target():
 def test_controller_grid_is_finite_and_respects_load_caps(
     heading_deg, pitch_deg, speed_delta
 ):
-    cfg = config()["action"]
+    cfg = legacy_config()["action"]
     own = state()
     action = np.asarray([
         heading_deg / 180.0, pitch_deg / 60.0, speed_delta / 50.0
@@ -76,8 +81,8 @@ def test_controller_grid_is_finite_and_respects_load_caps(
     assert abs(control.phi) <= np.pi / 2.0 + 1e-12
 
 
-def test_zero_action_is_trim_and_sustained_commands_stay_in_state_envelope():
-    cfg = config()
+def test_legacy_zero_action_is_trim_and_sustained_commands_stay_in_state_envelope():
+    cfg = legacy_config()
     own = state()
     trim = action_to_control(own, np.zeros(3), cfg["action"])
     assert (trim.nx, trim.nz, trim.phi) == pytest.approx((0.0, 1.0, 0.0))

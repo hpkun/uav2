@@ -11,7 +11,10 @@ from .combat_env import MultiUAVCombatEnv
 def make_combat_environment(config: str | Path | dict[str, Any]) -> MultiUAVCombatEnv:
     loaded = load_config(config) if not isinstance(config, dict) else config
     variant = loaded.get("environment_variant")
-    if variant != "single_round_v2":
+    if variant == "pursuit_v1":
+        from .pursuit_env import PursuitEnv
+        return PursuitEnv(loaded)
+    if variant != "single_round_v3":
         raise ValueError(f"unsupported environment_variant: {variant!r}")
     return MultiUAVCombatEnv(loaded)
 

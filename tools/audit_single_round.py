@@ -22,11 +22,12 @@ from algorithm.madsac.evaluation import evaluate_madsac
 BASE_COMMIT = '8d09df1fd1e6d2425b712d0c336e9525cd313c4c'
 PRE_CADENCE_COMMIT = '89fd4c54d07205bd0952eb972cf133b4a41349f7'
 ARCHIVE_SNAPSHOT_COMMIT = 'b80337fd7aad8a37865f10e3f2cb6451d2775b96'
+V2_COMMIT = '81d623e1ecafbf7df91aa2d9dc1fc19cf885f2a9'
 FROZEN_FILES = tuple(f'env/{name}.py' for name in (
-    'control', 'dynamics', 'integrator', 'weapon', 'reward', 'observation',
+    'dynamics', 'integrator', 'weapon', 'reward', 'observation',
     'scenario', 'fixed_policy', 'models', 'geometry', 'math_utils')) + (
-    'algorithm/common/evaluator.py', 'algorithm/common/vector_env.py',
-    'algorithm/mappo/networks.py', 'algorithm/mappo/trainer.py', 'algorithm/mappo/runner.py',
+    'algorithm/common/vector_env.py',
+    'algorithm/mappo/networks.py', 'algorithm/mappo/trainer.py',
     'algorithm/madsac/networks.py', 'algorithm/madsac/trainer.py', 'algorithm/madsac/evaluation.py')
 FORBIDDEN = re.compile(r'persistent_wave|persistent_waves|wave_index|waves_cleared|wave_cleared|spawned_next_wave|spawn_next_wave|clear_wave_|per_wave_metrics|wave_context|inter_wave|wave_entry|wave_specific|\bQ2\b|\bQ3\b')
 
@@ -51,7 +52,7 @@ def blob_hash(path):
 
 
 def compare_frozen_files(root, paths=FROZEN_FILES):
-    blobs = baseline_blobs(root, PRE_CADENCE_COMMIT)
+    blobs = baseline_blobs(root, V2_COMMIT)
     result = []
     for path in paths:
         current = blob_hash(root / path)
@@ -79,9 +80,13 @@ def verify_archives(root):
     for path in sorted((root / 'legacy').rglob('*')):
         if not path.is_file() or '__pycache__' in path.parts: continue
         relative = path.relative_to(root / 'legacy').as_posix()
-        if relative == 'README.md': continue  # Newly authored archive index.
+        if relative in ('README.md', 'single_round_v2/README.md'): continue  # Authored archive indexes.
         archived = path.relative_to(root).as_posix()
-        if relative.startswith('single_round_v1/'):
+        if relative.startswith('single_round_v2/'):
+            original = relative[len('single_round_v2/'):]
+            expected = baseline_blobs(root, V2_COMMIT)[original]
+            source = V2_COMMIT
+        elif relative.startswith('single_round_v1/'):
             require(archived in snapshots, f'archive absent from immutable snapshot: {archived}')
             original, expected, source = relative[len('single_round_v1/'):], snapshots[archived], ARCHIVE_SNAPSHOT_COMMIT
         else:
@@ -105,25 +110,48 @@ def verify_archives(root):
 
 
 def exact_config_delta(root):
-    previous = yaml.safe_load(baseline_content(root, 'configs/single_round_environment.yaml', PRE_CADENCE_COMMIT))
+    previous = yaml.safe_load(baseline_content(root, 'configs/single_round_environment.yaml', V2_COMMIT))
     current = yaml.safe_load((root / 'configs/single_round_environment.yaml').read_text(encoding='utf-8'))
-    require(previous['environment_variant'] == 'single_round_v1' and 'attack' not in previous,
-            'pre-cadence config has unexpected identity')
-    expected = {**previous, 'environment_variant': 'single_round_v2',
-                'attack': {'cadence': 'fixed_cooldown', 'cooldown_seconds': 1.0}}
-    require(current == expected, 'v2 configuration changed beyond variant + attack')
+    allowed = {'environment_version', 'environment_variant', 'task_type', 'action_semantics', 'action', 'blue_policy'}
+    require(set(current) == set(previous) | {'task_type', 'action_semantics'}, 'unexpected v3 configuration keys')
+    for key in set(previous) - allowed:
+        require(current[key] == previous[key], f'frozen combat configuration changed: {key}')
     validate_single_round_environment_config(current)
     for name in ('mappo.yaml', 'madsac_single_round_3m.yaml'):
-        old = yaml.safe_load(baseline_content(root, f'configs/{name}', PRE_CADENCE_COMMIT))
+        old = yaml.safe_load(baseline_content(root, f'configs/{name}', V2_COMMIT))
         new = yaml.safe_load((root / 'configs' / name).read_text(encoding='utf-8'))
         require(old == new, f'formal algorithm config changed: {name}')
     return current
+
+
+def direct_path_audit(root):
+    current = ast.parse((root/'env/combat_env.py').read_text(encoding='utf-8'))
+    previous = ast.parse(baseline_content(root, 'env/combat_env.py', V2_COMMIT).decode())
+    methods = lambda tree: {n.name:n for n in ast.walk(tree) if isinstance(n,ast.FunctionDef)}
+    a,b = methods(current),methods(previous)
+    for name in ('step', '_attack_attempts', '_resolve_combat', '_resolve_noncombat_losses'):
+        require(ast.dump(a[name]) == ast.dump(b[name]), f'frozen combat method changed: {name}')
+    decoder_tree = ast.parse((root/'env/control.py').read_text(encoding='utf-8'))
+    decoder = methods(decoder_tree)['normalized_action_to_direct_control']
+    red_path = ast.unparse(a['_advance']) + ast.unparse(decoder)
+    for token in ('heading_time_constant','pitch_time_constant','speed_time_constant','ManeuverTarget',
+                  'action_to_target','target_to_control','action_to_control','raw_nz','normal_load_max'):
+        require(token not in red_path, f'legacy controller in direct Red path: {token}')
+    require('normalized_action_to_direct_control' in ast.unparse(a['_advance']), 'missing direct decoder')
+    # Legacy controller definitions remain exactly the same, including function bodies.
+    old_control = ast.parse(baseline_content(root,'env/control.py',V2_COMMIT).decode())
+    old_defs = {n.name:ast.dump(n) for n in old_control.body if isinstance(n,(ast.FunctionDef,ast.ClassDef))}
+    new_defs = {n.name:ast.dump(n) for n in decoder_tree.body if isinstance(n,(ast.FunctionDef,ast.ClassDef))}
+    require(all(new_defs[k] == v for k,v in old_defs.items()), 'historical controller changed')
+    return dict(red_path='linear decoder -> ControlCommand -> unchanged RK4/dynamics',
+                legacy_controller_excluded=True, frozen_combat_methods_verified=4)
 
 
 def structural_audit(root=ROOT):
     frozen = compare_frozen_files(root)
     archives = verify_archives(root)
     exact_config_delta(root)
+    direct = direct_path_audit(root)
     runtime = [p for folder in ('env', 'algorithm', 'configs') for p in (root / folder).rglob('*')
                if p.suffix in ('.py', '.yaml')] + [root / 'README.md']
     findings = [dict(path=p.relative_to(root).as_posix(), line=i, text=line)
@@ -142,16 +170,16 @@ def structural_audit(root=ROOT):
             require(not any(term in text for term in ('FireState', '.armed', '_entry_attempts', 'red_fire_states', 'blue_fire_states')),
                     f'old firing dependency remains: {path}')
     return dict(historical_archive_baseline=BASE_COMMIT, baseline_commit=BASE_COMMIT,
-                pre_cadence_commit=PRE_CADENCE_COMMIT, archive_snapshot_commit=ARCHIVE_SNAPSHOT_COMMIT,
+                pre_cadence_commit=PRE_CADENCE_COMMIT, v2_baseline_commit=V2_COMMIT, direct_path_audit=direct, archive_snapshot_commit=ARCHIVE_SNAPSHOT_COMMIT,
                 current_head=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
-                frozen_comparison_scope='immutable pre-cadence commit to working tree; index ignored',
+                frozen_comparison_scope='immutable v2 commit to working tree; index ignored',
                 changed_files_scope='pre-cadence commit to HEAD only', frozen_files=frozen,
                 frozen_files_verified=len(frozen), archived_files_verified=sum(r['provenance_commit']==BASE_COMMIT for r in archives),
                 cadence_archived_files_verified=sum(r['provenance_commit']==ARCHIVE_SNAPSHOT_COMMIT for r in archives),
                 legacy_inventory=archives, runtime_files_scanned=len(runtime), runtime_keyword_findings=findings,
-                no_active_six_vs_six=True, no_formal_armed_dependency=True, exact_config_delta='variant + attack only',
-                formal_protocol='single_round_v2 / 4v4 / 52D / 3D / max_steps=1000 / cooldown=1.0s=10steps',
-                only_formal_combat_cadence_changed='exit-to-rearm -> fixed per-aircraft 1.0 s cooldown',
+                no_active_six_vs_six=True, no_formal_armed_dependency=True, exact_config_delta='version/variant/task/action identity + direct action + Blue guidance only',
+                formal_protocol='single_round_v3 / 4v4 / 52D / 3D / max_steps=1000 / cooldown=1.0s=10steps',
+                combat_cadence_unchanged='fixed per-aircraft 1.0 s cooldown',
                 static_python_parse='passed')
 
 
@@ -160,7 +188,7 @@ def checkpoint_audit(base):
     cfg = exact_config_delta(ROOT)
     algo = yaml.safe_load((ROOT / 'configs/mappo.yaml').read_text())
     mappo = evaluate_mappo_checkpoint(base / 'mappo/latest.pt', algo, cfg, 'cuda', [10000000])
-    require(mappo['protocol_complete'] and mappo['evaluation_environment_variant']=='single_round_v2', 'checkpoint identity mismatch')
+    require(mappo['protocol_complete'] and mappo['evaluation_environment_variant']=='single_round_v3', 'checkpoint identity mismatch')
     algo = yaml.safe_load((ROOT / 'configs/madsac_single_round_3m.yaml').read_text())
     state = torch.load(base / 'madsac/latest.pt', map_location='cpu', weights_only=False)
     validate_madsac_checkpoint(state, cfg, algo)

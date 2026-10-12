@@ -71,6 +71,9 @@ def _validate_common_checkpoint_contract(
             "semantics are incompatible"
         )
     implementation_version = state.get("mappo_impl_version")
+    for field in ("task_type", "action_semantics"):
+        if extra.get(field) != env_config.get(field) or field not in extra:
+            raise RuntimeError(f"checkpoint {field} missing or mismatch")
     if implementation_version != MAPPO_IMPL_VERSION:
         raise RuntimeError(
             "checkpoint MAPPO implementation mismatch: expected "
@@ -114,6 +117,9 @@ def validate_checkpoint_environment(
             "are incompatible"
         )
     expected_variant = _environment_variant(env_config)
+    for field in ("task_type", "action_semantics"):
+        if extra.get(field) != env_config.get(field) or field not in extra:
+            raise RuntimeError(f"checkpoint {field} missing or mismatch")
     checkpoint_variant = str(extra.get("environment_variant"))
     if checkpoint_variant != expected_variant:
         raise RuntimeError(

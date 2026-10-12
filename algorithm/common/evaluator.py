@@ -87,7 +87,11 @@ def evaluate(actor, config=DEFAULT_COMBAT_CONFIG, seeds=range(10_000_000, 10_000
                     **info,
                 })
                 break
-    result = aggregate_episode_records(records)
+    if config.get("task_type") == "pursuit":
+        from .pursuit_metrics import aggregate_pursuit_records
+        result = aggregate_pursuit_records(records)
+    else:
+        result = aggregate_episode_records(records)
     if policy_rows:
         result.update({
             key: float(np.mean([row[key] for row in policy_rows]))

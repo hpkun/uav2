@@ -9,8 +9,8 @@ from .config import ENVIRONMENT_VERSION, aircraft_spec, load_config, attack_cool
 from .dynamics import PointMassDynamics
 from .integrator import RK4Integrator
 from .models import AircraftState
-from .control import action_to_control
-from .fixed_policy import NearestTargetPursuitPolicy, GroundAwareNearestTargetPursuitPolicy
+from .control import normalized_action_to_direct_control
+from .direct_policy import DirectPursuitPolicy
 from .geometry import engagement_geometry
 from .observation import OBSERVATION_DIM, build_team_observations, observation_dim_from_config
 from .reward import paper_state_reward_components
@@ -27,7 +27,7 @@ class MultiUAVCombatEnv:
 
     team_size, observation_dim, action_dim = 4, OBSERVATION_DIM, 3
     environment_version = ENVIRONMENT_VERSION
-    environment_variant = "single_round_v2"
+    environment_variant = "single_round_v3"
 
     def __init__(
         self, config: str | Path | dict[str, Any] = DEFAULT_COMBAT_CONFIG
@@ -36,31 +36,27 @@ class MultiUAVCombatEnv:
         if str(self.config.get("environment_version")) != ENVIRONMENT_VERSION:
             raise ValueError(f"environment_version must be {ENVIRONMENT_VERSION}")
         self.environment_variant = self.config.get("environment_variant")
-        if self.environment_variant != "single_round_v2":
-            raise ValueError("environment_variant must be single_round_v2")
+        if self.environment_variant != "single_round_v3":
+            raise ValueError("environment_variant must be single_round_v3")
         if self.config["scenario"]["team_size"] != 4:
             raise ValueError("environment_variant/team_size mismatch")
         self.spec = aircraft_spec(self.config)
         self.observation_dim = observation_dim_from_config(self.config["observation"])
         if self.observation_dim != 52:
-            raise ValueError("single_round_v2 requires observation_dim=52")
+            raise ValueError("single_round_v3 requires observation_dim=52")
         self.dt = float(self.config["simulation"]["dt"])
         self.cooldown_steps = attack_cooldown_steps(self.config)
         self.max_steps = int(self.config["simulation"]["max_steps"])
         self.arena_radius = float(self.config["arena"]["radius"])
         self.dynamics = PointMassDynamics()
         self.integrator = RK4Integrator(self.dt)
-        policy_type = self.config["blue_policy"].get("type")
-        if policy_type == "nearest_target":
-            self.fixed_policy = NearestTargetPursuitPolicy(
-                self.config["blue_policy"], self.config["action"]
-            )
-        elif policy_type == "ground_aware_nearest_target":
-            self.fixed_policy = GroundAwareNearestTargetPursuitPolicy(
-                self.config["blue_policy"], self.config["action"], self.config["aircraft"],
-            )
-        else:
-            raise ValueError(f"unsupported blue_policy.type: {policy_type!r}")
+        if self.config.get("task_type") != "combat" or self.config.get("action_semantics") != "direct_physical_control":
+            raise ValueError("v3 requires combat/direct_physical_control identity")
+        from .direct_protocol import validate_direct_action_config
+        validate_direct_action_config(self.config)
+        if self.config["blue_policy"].get("type") != "direct_ground_aware_nearest_target":
+            raise ValueError("v3 requires direct Blue policy")
+        self.fixed_policy = DirectPursuitPolicy(self.config["blue_policy"])
         self.weapon = WeaponEnvelope(**self.config["weapon"])
         self.rng = np.random.default_rng()
         self.red: list[AircraftState] = []
@@ -113,11 +109,13 @@ class MultiUAVCombatEnv:
         self.steps = 0
         self._episode_done = False
         self._reset_metrics()
-        if isinstance(self.fixed_policy, GroundAwareNearestTargetPursuitPolicy):
+        if isinstance(self.fixed_policy, DirectPursuitPolicy):
             self.fixed_policy.reset_diagnostics()
         return self._observations(), {
             "environment_version": ENVIRONMENT_VERSION,
             "environment_variant": self.environment_variant,
+            "task_type": "combat",
+            "action_semantics": "direct_physical_control",
             "radial_angle": radial_angle,
             **self._blue_diagnostics(),
             "red_alive_mask": self.red_alive_mask,
@@ -125,7 +123,7 @@ class MultiUAVCombatEnv:
         }
 
     def _blue_diagnostics(self) -> dict[str, Any]:
-        if not isinstance(self.fixed_policy, GroundAwareNearestTargetPursuitPolicy):
+        if not isinstance(self.fixed_policy, DirectPursuitPolicy):
             return {}
         return {**self.fixed_policy.diagnostics(),
                 "blue_ground_guard_override_mask": self.fixed_policy.last_override_mask.copy()}
@@ -144,7 +142,7 @@ class MultiUAVCombatEnv:
         phis = np.zeros(self.team_size, dtype=np.float32)
         for index, state in enumerate(states):
             if state.alive:
-                control = action_to_control(state, actions[index], self.config["action"])
+                control = normalized_action_to_direct_control(actions[index])
                 phis[index] = control.phi
                 states[index] = self.integrator.step(
                     state, control, self.dynamics, self.spec
@@ -315,6 +313,8 @@ class MultiUAVCombatEnv:
         red_survivors = int(self.red_alive_mask.sum())
         blue_survivors = int(self.blue_alive_mask.sum())
         info: dict[str, Any] = {
+            "task_type": "combat",
+            "action_semantics": "direct_physical_control",
             "environment_version": ENVIRONMENT_VERSION,
             "environment_variant": self.environment_variant,
             "red_success": red_win,

@@ -33,6 +33,7 @@ class MAPPOTrainingRunner:
                  smoke: bool = False) -> None:
         validate_single_round_environment_config(env_config)
         self.env_config, self.algorithm_config = env_config, algorithm_config
+        self.actor_initialization = None
         self.smoke = bool(smoke)
         training, network = algorithm_config["training"], algorithm_config["network"]
         implementation = algorithm_config["implementation"]
@@ -102,6 +103,9 @@ class MAPPOTrainingRunner:
     def startup_summary(self) -> dict[str, Any]:
         return {
             "algorithm": "MAPPO", "mode": "smoke" if self.smoke else "formal",
+            "task_type": self.env_config["task_type"],
+            "action_semantics": self.env_config["action_semantics"],
+            "actor_initialization": self.actor_initialization,
             "device": self.device, "observation_dim": self.observation_dim,
             "action_dim": self.action_dim, "num_agents": self.num_agents,
             "effective_hidden_dim": self.effective_hidden_dim,
@@ -154,6 +158,8 @@ class MAPPOTrainingRunner:
         }
 
     def train_log_line(self) -> str:
+        if self.env_config["task_type"] == "pursuit":
+            return f"[TRAIN] task=pursuit | steps={self.trainer.sampled_steps}/{self.total_sampled_steps} | episodes={len(self.completed_records)}"
         r = self.recent_episode_metrics()
         percent = 100.0 * self.trainer.sampled_steps / self.total_sampled_steps
         return (f"[TRAIN] steps={self.trainer.sampled_steps}/{self.total_sampled_steps} ({percent:.1f}%) "
@@ -168,6 +174,8 @@ class MAPPOTrainingRunner:
 
     @staticmethod
     def evaluation_log_line(r: dict[str, float]) -> str:
+        if r.get("task_type") == "pursuit":
+            return f"[EVAL] task=pursuit | return={r['average_return']:.2f} | mean_distance_m={r['mean_nearest_distance']:.2f}"
         return (f"[EVAL] steps={int(r['sampled_steps'])} | return={r['average_return']:.2f} "
                 f"| agent_return={r['average_agent_return']:.2f} | win={r['win_rate']:.2f} "
                 f"| red_loss={r['average_red_loss']:.2f} | ep_len={r['average_episode_length']:.1f}")
@@ -178,6 +186,8 @@ class MAPPOTrainingRunner:
 
     @staticmethod
     def done_log_line(s: dict[str, Any]) -> str:
+        if s.get("task_type") == "pursuit":
+            return f"[DONE] task=pursuit | steps={s['sampled_steps']} | episodes={s['completed_episodes']} | return={s['average_return']:.2f}"
         return (f"[DONE] algorithm=MAPPO | steps={s['sampled_steps']} "
                 f"| episodes={s['completed_episodes']} | return={s['average_return']:.2f} "
                 f"| win={s['win_rate']:.2f} | red_loss={s['average_red_loss']:.2f}")
@@ -197,6 +207,12 @@ class MAPPOTrainingRunner:
         return rows
 
     def _write_step_metrics(self, result, rows: list[dict[str, Any]]) -> None:
+        if self.env_config["task_type"] == "pursuit":
+            from algorithm.common.pursuit_metrics import pursuit_step_metrics
+            record = pursuit_step_metrics(result, self.trainer.sampled_steps, self.last_metrics)
+            with (self.output_dir / "training_metrics.jsonl").open("a", encoding="utf-8") as stream:
+                stream.write(json.dumps(record) + "\n")
+            return
         mean = lambda key: float(np.mean([r[key] for r in rows])) if rows else None
         rate = lambda predicate: float(np.mean([predicate(r) for r in rows])) if rows else None
         record = {
@@ -322,6 +338,8 @@ class MAPPOTrainingRunner:
                 writer.writeheader(); writer.writerows(self.evaluation_history)
 
     def _evaluation_key(self, record: dict[str, float]) -> tuple[float, ...]:
+        if self.env_config["task_type"] == "pursuit":
+            return (float(record["average_return"]),)
         return evaluation_selection_key(record)
 
     def _consider_best_evaluation(self, record: dict[str, float]) -> bool:
@@ -336,7 +354,10 @@ class MAPPOTrainingRunner:
 
     def save_checkpoint(self, path: str | Path) -> None:
         self.trainer.save(path, {"environment_version": ENVIRONMENT_VERSION,
+            "actor_initialization": self.actor_initialization,
             "environment_variant": self.env_config.get("environment_variant"),
+            "task_type": self.env_config["task_type"],
+            "action_semantics": self.env_config["action_semantics"],
             "mappo_impl_version": MAPPO_IMPL_VERSION,
             "observation_dim": self.observation_dim,
             "action_dim": self.action_dim,
@@ -365,6 +386,7 @@ class MAPPOTrainingRunner:
             expected_smoke=self.smoke,
         )
         extra = self.trainer.load(path)
+        self.actor_initialization = extra.get("actor_initialization")
         previous = np.asarray(extra.get("episode_indices", [0] * self.num_envs), dtype=np.int64)
         if previous.shape != (self.num_envs,):
             raise RuntimeError("checkpoint environment count mismatch")
@@ -378,6 +400,12 @@ class MAPPOTrainingRunner:
         self.next_checkpoint = (self.trainer.sampled_steps // self.checkpoint_interval + 1) * self.checkpoint_interval
 
     def summary(self) -> dict[str, Any]:
+        if self.env_config["task_type"] == "pursuit":
+            from algorithm.common.pursuit_metrics import aggregate_pursuit_records
+            metrics = aggregate_pursuit_records(self.completed_records) if self.completed_records else {"average_return":0.0}
+            return {**self.startup_summary(), **metrics, "sampled_steps":self.trainer.sampled_steps,
+                "completed_episodes":len(self.completed_records), "last_update_metrics":self.last_metrics,
+                "evaluation_history":self.evaluation_history, "best_evaluation":self.best_evaluation}
         mean = lambda key: float(np.mean([r[key] for r in self.completed_records])) if self.completed_records else 0.0
         best = self.best_evaluation or {}
         return {**self.startup_summary(), "sampled_steps": self.trainer.sampled_steps,

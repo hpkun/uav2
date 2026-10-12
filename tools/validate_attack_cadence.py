@@ -22,7 +22,7 @@ def main():
  result=dict(variant=env.environment_variant,dt=env.dt,cooldown_seconds=1.0,cooldown_steps=env.cooldown_steps,
              attempt_steps=attempts,red_attempts=info['red_fire_attempts'],
              cooldown_blocked_agent_steps=info['red_cooldown_blocked_agent_steps'],observation_shape=list(env._observations().shape))
- output=ROOT/'outputs/cadence_v2_validation';output.mkdir(parents=True,exist_ok=True)
+ output=ROOT/'outputs/cadence_v3_validation';output.mkdir(parents=True,exist_ok=True)
  (output/'cadence.json').write_text(json.dumps(result,indent=2))
  print(json.dumps(result,indent=2))
 

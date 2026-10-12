@@ -60,7 +60,7 @@ def main():
         assert len(runner.vector.used_training_seeds) == runner.vector.episode_indices[0] + 1
         assert len(runner.vector.used_training_seeds) == len(set(runner.vector.used_training_seeds))
         assert runner.vector.worker_environment_classes == ['MultiUAVCombatEnv']
-        assert runner.vector.worker_fixed_policy_classes == ['GroundAwareNearestTargetPursuitPolicy']
+        assert runner.vector.worker_fixed_policy_classes == ['DirectPursuitPolicy']
         assert not any('wave' in key for row in runner.completed_records for key in row)
         (output / 'run_summary.json').write_text(json.dumps(summary, indent=2))
         (output / 'env_config.yaml').write_text(yaml.safe_dump(cfg, sort_keys=False))

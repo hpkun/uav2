@@ -216,6 +216,8 @@ class MADSACTrainingRunner:
         training = self.algorithm_config["training"]
         return {
             "environment_version": ENVIRONMENT_VERSION,
+            "task_type": self.env_config["task_type"],
+            "action_semantics": self.env_config["action_semantics"],
             "environment_variant": self.env_config["environment_variant"],
             "environment_config": deepcopy(self.env_config),
             "algorithm_config": deepcopy(self.algorithm_config),

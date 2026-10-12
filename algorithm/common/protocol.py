@@ -12,14 +12,25 @@ from env.config import attack_cooldown_steps
 
 def validate_single_round_environment_config(env_config: dict[str, Any]) -> None:
     """Lock the formal environment identity; low-level unit environments stay flexible."""
+    from env.direct_protocol import validate_direct_action_config
+    try:
+        validate_direct_action_config(env_config)
+    except ValueError as error:
+        raise RuntimeError(str(error)) from error
+    if env_config.get("task_type") == "pursuit":
+        from env.pursuit_env import validate_pursuit_config
+        validate_pursuit_config(env_config)
+        return
+    if env_config.get("task_type") != "combat":
+        raise RuntimeError("formal task_type must be combat or pursuit")
     for section in ("simulation", "scenario", "observation", "action", "attack"):
         if not isinstance(env_config.get(section), dict):
             raise RuntimeError(f"formal single-round configuration missing section: {section}")
     variant = env_config.get("environment_variant")
-    if variant != "single_round_v2":
+    if variant != "single_round_v3":
         raise RuntimeError(f"formal single-round environment_variant mismatch: {variant!r}")
     checks = {
-        "environment_version": (env_config.get("environment_version"), "2.3"),
+        "environment_version": (env_config.get("environment_version"), "2.4"),
         "simulation.dt": (env_config.get("simulation", {}).get("dt"), 0.1),
         "simulation.max_steps": (env_config.get("simulation", {}).get("max_steps"), 1000),
         "scenario.team_size": (env_config.get("scenario", {}).get("team_size"), 4),

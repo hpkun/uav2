@@ -1,94 +1,75 @@
-# Single-Round V2 UAV Combat
+# Direct Physical Control UAV Tasks
 
-The only formal task is `single_round_v2`, environment version `2.3`: one 4v4
-episode, 52D observation, 3D flight action, dt=0.1, max_steps=1000. Red or Blue
-elimination terminates immediately; mutual elimination is a draw. Unresolved
-combat truncates with `red_failure_timeout`. Vector auto-reset starts a new
-independent 4v4 episode with a fresh seed and preserves the terminal transition.
-The formal runtime is strictly fixed to four aircraft per side. Team-size
-generalization is removed; six-aircraft scenarios, networks and return vectors
-are rejected by the formal protocol and environment contracts.
+The formal combat environment is `single_round_v3`, version `2.4`, with
+`task_type=combat` and `action_semantics=direct_physical_control`. It retains
+4v4, 52D observations, dt=0.1 s, and a 1000-step horizon. Historical v1/v2
+configs and checkpoints are rejected by formal training, evaluation and resume.
+The frozen v2 source reference is commit `81d623e1ecafbf7df91aa2d9dc1fc19cf885f2a9`;
+selected source/config snapshots are under `legacy/single_round_v2`.
 
-Blue remains `ground_aware_nearest_target`. Dynamics, controller, RK4, aircraft
-limits, radius=5000, 8 km opposing initialization, weapon geometry/hit model,
-observation and R1–R4 reward parameters are unchanged by the cadence update.
+The actor produces normalized `[a_T, a_L, a_beta]`. After clipping to [-1,1],
+the decoder returns `ControlCommand(nx=2*a_T, nz=5*a_L, phi=(pi/3)*a_beta)`.
+It performs no tracking, inverse dynamics, load projection, smoothing or bias.
+Zero action gives zero lift and therefore dtheta/dt=-g/v at theta=0.
+Horizontal trim is physical `[0,1,0]`, normalized `[0,0.2,0]`.
+Old delta controller APIs remain available for historical analysis.
 
-## Attack cadence
+PointMassDynamics, RK4, speed/pitch envelopes, combat scenario/initialization,
+observation features, weapon geometry/hit model and R1–R4 are frozen. The
+4000 m weapon range and independent 1 s / 10-step firing cooldown remain:
+continuous eligibility produces attempts at steps 1,11,21,... . Hit and miss
+both start cooldown; both sides attempt before simultaneous resolution.
 
-The existing frozen weapon envelope determines eligibility, with the nearest
-eligible target selected. First legal attack is immediate. Each attack attempt
-starts a **1.0 s / 10-step cooldown**, independently for each aircraft on both
-teams. Hit and miss both start cooldown. Switching targets or leaving/re-entering
-the fire window cannot bypass it. An aircraft continuously inside the window
-may fire again when its cooldown expires, without exiting the window. If there
-is no eligible target at expiry, it waits and attacks as soon as one exists.
-Ammunition remains abstract/unlimited; the actor does not choose fire actions.
-Both sides compute attempts before simultaneous combat resolution.
+Blue uses deterministic nearest-alive-target guidance and desired speed 250 m/s.
+Response times under `blue_policy` describe speed acceleration and heading/pitch
+error responses (seconds); rate bounds are rad/s. Only Blue inverts requested
+angular rates to physical lift/roll, clips to physical limits, and emits the same
+normalized physical action decoded for Red. Ground protection explicitly uses
+time-to-ground <=4 s, forces beta=0 and L=5, and keeps thrust legal. This matches
+the previous guard's 2*2 s time scale. A one-ULP tolerance handles threshold rounding.
 
-An attempt at step 1 sets next_fire_step=11: steps 2–10 are blocked, step 11
-is allowed. Continuous eligibility yields attempts at 1, 11, 21, ... . Reset
-clears both integer per-aircraft clock arrays. Cooldown diagnostics appear in
-info and never enter the 52D actor observation.
+`configs/pursuit_environment.yaml` defines the independent `pursuit_v1` task.
+`algorithm/train_pursuit.py` uses the unchanged MAPPO network/PPO trainer.
+It shares direct controls, integration and the 52D observation builder, has
+random legal initial positions and seeded random opponent controls held for
+20 steps, and has no weapon or attack configuration/object/path.
+Reward is exclusively `-nearest_distance_m * distance_reward_scale`, default 1.0.
+Dead-agent rewards are zero under the existing alive-mask architecture; raw
+distance validity masks are logged explicitly. The 1000-step horizon is a
+**project implementation choice**, not a reported paper horizon.
 
-```yaml
-attack:
-  cadence: fixed_cooldown
-  cooldown_seconds: 1.0
-```
+Pursuit logs raw per-agent distance/reward, mean/final/minimum nearest distance,
+ground/boundary losses, mean speed, speed/pitch envelope hit ratios, mean absolute
+T/L/beta and near-limit fractions. Near-limit means >=95% of the physical limit.
+Distance means/minima use valid alive-agent samples; final distance uses each
+agent's last valid distance, avoiding a zero-distance artifact after elimination.
+State/control diagnostics sample Red UAVs alive before each integration step.
+These diagnostics never enter reward. Pursuit checkpoint selection maximizes
+mean team return; combat keeps win rate, return, then fewer Red losses.
 
-The underlying fire eligibility/hit model remains frozen; a 1.0 s per-aircraft
-firing cooldown is introduced to avoid unrealistically repeated 0.1-s attack
-attempts while removing the previous exit-to-rearm artifact.
-**The 1.0 s cooldown is a project modeling extension**, not a specific cooldown
-prescribed by the MADSAC paper.
+MAPPO supports `--init-actor-checkpoint` for **fresh combat v3 runs only**.
+It requires a pursuit checkpoint with version/task/action identity, 52/3/4
+dimensions and exactly compatible actor tensor keys/shapes. It loads only actor
+parameters and records source path/SHA-256/task/action semantics. Critic,
+optimizers, counters and history stay fresh. It cannot be combined with resume.
+Normal resume/evaluation require exact task/config hashes and direct-control
+identity. Smoke actors use hidden=64; formal actors use the unchanged hidden=256,
+so smoke and formal actors cannot initialize one another.
 
-## Training and validation
+Runtime policy: use WSL Ubuntu with `conda activate uav`; if WSL is unavailable,
+use Windows PowerShell's uav environment. CUDA is mandatory for training and
+checkpoint audits/evaluation; there is no CPU fallback. Repository tests and
+static checks also run in uav. Validation tools are `tools/audit_single_round.py`,
+`tools/validate_attack_cadence.py`, and `tools/smoke_direct_control.py`.
+The latter caps each of combat, pursuit and actor-initialized combat at 1200
+environment transitions and refuses nonempty output directories.
 
-Use the uav Conda environment. CUDA is mandatory for training and checkpoint
-audits/evaluation, with no CPU fallback. Formal MAPPO and MADSAC share the same
-v2 validator and environment config. Low-level unit tests may use shorter time
-limits. Networks and algorithm hyperparameters are unchanged; both use gamma=0.99.
-Best checkpoint selection is win rate, average team return, then fewer Red losses.
+The audit compares 16 frozen sources against immutable v2 Git blobs, checks
+frozen combat method ASTs and preserved legacy controller definitions, scans
+the active Red execution/decoder path for old controller dependencies, and
+verifies the historical archives. Its changed-files CSV remains explicitly a
+committed pre-cadence-to-HEAD inventory; working-tree changes are audited separately.
+The clean-clone regression tests committed HEAD without copying local patches
+or creating a temporary commit. Long training awaits user confirmation.
 
-```powershell
-conda activate uav
-python -m pytest -q
-python tools/validate_attack_cadence.py
-python tools/audit_single_round.py --output-dir outputs/cadence_audit
-python tools/smoke_single_round.py --output-dir outputs/cadence_smoke
-python tools/audit_single_round.py --output-dir outputs/cadence_audit --checkpoint-dir outputs/cadence_smoke
-```
-
-MAPPO defaults to configs/single_round_environment.yaml and configs/mappo.yaml.
-MADSAC defaults to the same environment and configs/madsac_single_round_3m.yaml.
-
-```powershell
-python -u algorithm/train_mappo.py --env-config configs/single_round_environment.yaml --algorithm-config configs/mappo.yaml --device cuda --seed 0 --num-envs 24 --total-sampled-steps 3000000 --output-dir outputs/mappo_single_round_v2_seed0_3m
-python -u algorithm/train_madsac.py --device cuda --output-dir outputs/madsac_single_round_v2_seed5301_3m
-```
-
-Historical v1 checkpoints/configs are rejected by formal factory, training,
-evaluation and resume. There is no silent migration or compatibility bypass.
-V1 and 6v6 materials are preserved under legacy/single_round_v1, outside formal
-imports and default pytest collection. Existing historical archive files are
-unchanged. Previous acceptance documents in reports describe their own versions.
-
-The audit separates the historical archive baseline
-8d09df1fd1e6d2425b712d0c336e9525cd313c4c from the immutable pre-cadence formal
-baseline 89fd4c54d07205bd0952eb972cf133b4a41349f7. Nineteen frozen runtime files
-must match pre-cadence Git blobs exactly, including observation, scenario,
-GroundAware policy, common evaluator/vector environment, MAPPO runner, and both
-networks/trainers. No team-size exceptions or self-declared baseline hashes are used.
-The environment config may differ only in variant and the added attack section.
-The original 435 archive files match the historical baseline; nine newer v1/6v6
-snapshots match their committed archive identity b80337fd7aad8a37865f10e3f2cb6451d2775b96.
-Existing legacy source content remains unchanged. changed_files.csv describes
-pre-cadence→HEAD committed changes. Structural audit requires no local checkpoints
-and writes ignored output files, leaving a clean checkout clean.
-
-The clean-clone regression directly clones the local committed HEAD, audits it
-twice, compares the JSON results and verifies cleanliness. It does not copy
-uncommitted worktree files or create a temporary commit. Its deliberate frozen-file
-staging check cannot change the immutable comparison baseline.
-
-See reports/cadence_v2_acceptance.md for the detailed cadence acceptance results.
+See `reports/direct_control_v3_acceptance.md` for this iteration's results.

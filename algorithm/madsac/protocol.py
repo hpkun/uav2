@@ -7,6 +7,8 @@ from .trainer import MADSAC_IMPL_VERSION
 
 def validate_madsac_config(env_config: dict, algorithm_config: dict) -> None:
     validate_single_round_environment_config(env_config)
+    if env_config.get("task_type") != "combat":
+        raise RuntimeError("MADSAC formal entry requires combat")
     n, t, i = algorithm_config["network"], algorithm_config["training"], algorithm_config["implementation"]
     if algorithm_config.get("algorithm") != "madsac":
         raise RuntimeError("algorithm config is not madsac")
@@ -36,6 +38,8 @@ def validate_madsac_checkpoint(
     checks = {
         "environment_version": extra.get("environment_version"),
         "environment_variant": extra.get("environment_variant"),
+        "task_type": extra.get("task_type"),
+        "action_semantics": extra.get("action_semantics"),
         "training_seed": int(extra.get("training_seed", -1)),
         "environment_config_sha256": extra.get("environment_config_sha256"),
         "algorithm_config_sha256": extra.get("algorithm_config_sha256"),
@@ -44,8 +48,10 @@ def validate_madsac_checkpoint(
         "num_agents": int(extra.get("num_agents", -1)),
     }
     expected = {
-        "environment_version": "2.3",
-        "environment_variant": "single_round_v2",
+        "environment_version": "2.4",
+        "environment_variant": "single_round_v3",
+        "task_type": "combat",
+        "action_semantics": "direct_physical_control",
         "training_seed": int(
             algorithm_config["training"]["seed"]
             if expected_training_seed is None

@@ -166,7 +166,7 @@ def test_checkpoint_version_is_saved_and_incompatible_semantics_fail_fast(tmp_pa
         invalid = tmp_path / "invalid.pt"
         runner.save_checkpoint(valid)
         state = torch.load(valid, map_location="cpu", weights_only=False)
-        assert state["extra"]["environment_version"] == "2.3"
+        assert state["extra"]["environment_version"] == "2.4"
         state["extra"]["environment_version"] = "2.0"
         torch.save(state, invalid)
         with pytest.raises(RuntimeError, match="environment semantics"):

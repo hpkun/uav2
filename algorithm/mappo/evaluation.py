@@ -38,6 +38,8 @@ def evaluate_mappo_checkpoint(
     )
     extra = state.get("extra", {})
     required_protocol_fields = (
+        "task_type",
+        "action_semantics",
         "environment_version",
         "environment_variant",
         "observation_dim",
@@ -119,6 +121,10 @@ def evaluate_mappo_checkpoint(
         "protocol_complete": protocol_complete,
         "checkpoint_environment_version": extra.get("environment_version"),
         "checkpoint_environment_variant": checkpoint_variant,
+        "checkpoint_task_type": extra["task_type"],
+        "checkpoint_action_semantics": extra["action_semantics"],
+        "evaluation_task_type": environment_config["task_type"],
+        "evaluation_action_semantics": environment_config["action_semantics"],
         "evaluation_environment_version": str(
             environment_config["environment_version"]
         ),

@@ -76,22 +76,21 @@ def test_no_active_six_config_and_legacy_isolated():
     assert not any(name.startswith('legacy.') for name in sys.modules)
 
 
-def test_all_frozen_sources_match_immutable_pre_cadence_commit():
-    assert audit.PRE_CADENCE_COMMIT=='89fd4c54d07205bd0952eb972cf133b4a41349f7'
+def test_all_frozen_sources_match_immutable_v2_commit():
+    assert audit.V2_COMMIT=='81d623e1ecafbf7df91aa2d9dc1fc19cf885f2a9'
     result=audit.compare_frozen_files(ROOT)
-    assert len(result)==19 and all(row['baseline_blob']==row['current_blob'] for row in result)
-    assert not (ROOT/'reports/cadence_v2_baseline.json').exists()
-    assert 'TEAM_SIZE_REFACTORS' not in (ROOT/'tools/audit_single_round.py').read_text()
+    assert len(result)==16 and all(row['baseline_blob']==row['current_blob'] for row in result)
+    assert audit.direct_path_audit(ROOT)['legacy_controller_excluded']
 
 
-def test_exact_configuration_delta_from_committed_v1():
+def test_exact_configuration_delta_from_committed_v2():
     current=audit.exact_config_delta(ROOT)
-    previous=yaml.safe_load(audit.baseline_content(ROOT,'configs/single_round_environment.yaml',audit.PRE_CADENCE_COMMIT))
-    assert previous['environment_variant']=='single_round_v1'
-    assert current['environment_variant']=='single_round_v2'
-    for key in previous:
-        if key!='environment_variant':assert previous[key]==current[key]
-    assert set(current)-set(previous)=={'attack'}
+    previous=yaml.safe_load(audit.baseline_content(ROOT,'configs/single_round_environment.yaml',audit.V2_COMMIT))
+    assert previous['environment_variant']=='single_round_v2'
+    assert current['environment_variant']=='single_round_v3'
+    allowed={'environment_version','environment_variant','action','blue_policy'}
+    for key in set(previous)-allowed:assert previous[key]==current[key]
+    assert set(current)-set(previous)=={'task_type','action_semantics'}
 
 
 def test_clean_clone_regression_has_no_snapshot_commit_or_worktree_copy():

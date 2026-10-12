@@ -36,7 +36,7 @@ def test_factory_and_reset_contract():
     assert observation.shape == (4, 52) and env.action_dim == 3
     assert len(env.red) == len(env.blue) == 4
     assert env.red_alive_mask.sum() == env.blue_alive_mask.sum() == 4
-    assert info['environment_variant'] == 'single_round_v2'
+    assert info['environment_variant'] == 'single_round_v3'
     assert env.max_steps == 1000
     assert isinstance(env.fixed_policy, GroundAwareNearestTargetPursuitPolicy)
 
@@ -135,11 +135,14 @@ def test_ground_guard_risk_override_and_episode_reset():
 
 
 def test_policy_types_explicit_and_invalid():
+    from env.direct_policy import DirectPursuitPolicy
     cfg = config()
+    assert type(make_combat_environment(cfg).fixed_policy) is DirectPursuitPolicy
     cfg['blue_policy']['type'] = 'nearest_target'
-    assert type(make_combat_environment(cfg).fixed_policy) is NearestTargetPursuitPolicy
+    with pytest.raises(ValueError, match='direct Blue'):
+        make_combat_environment(cfg)
     cfg['blue_policy']['type'] = 'invalid'
-    with pytest.raises(ValueError, match='blue_policy.type'):
+    with pytest.raises(ValueError, match='direct Blue'):
         make_combat_environment(cfg)
 
 
@@ -223,5 +226,5 @@ def test_madsac_checkpoint_rejects_old_environment():
                  algorithm_config_sha256=config_sha256(algorithm))
     state = dict(algorithm='madsac', implementation_version=MADSAC_IMPL_VERSION,
                  extra=extra, formal_exact_resume_supported=False, replay_buffer_included=False)
-    with pytest.raises(RuntimeError, match='environment_variant'):
+    with pytest.raises(RuntimeError, match='environment_version'):
         validate_madsac_checkpoint(state, cfg, algorithm)
