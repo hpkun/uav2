@@ -88,3 +88,31 @@ The clean-clone regression tests committed HEAD without copying local patches
 or creating a temporary commit. Long training awaits user confirmation.
 
 See `reports/direct_control_v3_acceptance.md` for this iteration's results.
+
+## Training metrics persistence
+
+MAPPO combat/pursuit and MADSAC write training_metrics.jsonl snapshots at their
+existing runtime_logging.console_interval_sampled_steps (currently 20000), with
+an independent threshold counter. Threshold crossing handles non-divisible
+vector sizes; final actual sampled_steps is always recorded without duplicates.
+Snapshots preserve the original per-transition schema, including pursuit arrays;
+they are not interval averages. JSONL uses compact separators, without gzip.
+Optimization metrics, evaluation history, console logging and best selection
+keep their previous cadence and content. Configs and checkpoint identities do
+not change. MAPPO resume accepts existing high-frequency history and reloads
+the last legal log step after rollback. MADSAC exact resume remains unsupported
+under its existing replay/checkpoint protocol.
+
+`tools/compact_training_metrics.py` is an optional streaming tool for completed
+old logs. Use `--input`, optional `--output`, and optional
+`--interval-sampled-steps` (default 20000). It retains first, threshold-crossing
+and final records. Default output is a new training_metrics.compact.jsonl file;
+existing output paths and source overwrite are rejected. Only explicit
+`--replace` creates a synced temporary file, backs up the original, and atomically
+installs the compact file. Replacement is refused when source size/mtime/identity
+changes during scanning. Invalid sampled_steps or non-increasing inputs are
+rejected. No existing experimental logs are automatically compacted.
+
+`tools/validate_training_metrics_logging.py` runs bounded CUDA smokes and the
+3M-equivalent synthetic counter test in a fresh output directory. See
+`reports/training_metrics_logging_acceptance.md` for logging-only acceptance.

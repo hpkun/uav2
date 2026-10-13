@@ -13,6 +13,7 @@ import torch
 from algorithm.common.checkpoint import evaluation_selection_key
 from algorithm.common.evaluator import episode_return_metrics
 from algorithm.common.protocol import config_sha256
+from algorithm.common.training_metrics_logging import TrainingMetricsSnapshots
 from algorithm.common.vector_env import ParallelVectorEnv, VectorStep
 from env.config import ENVIRONMENT_VERSION
 from .evaluation import evaluate_madsac
@@ -29,7 +30,7 @@ def advance_sampled_steps(current: int, num_envs: int) -> int:
     return int(current) + int(num_envs)
 
 
-class MADSACTrainingRunner:
+class MADSACTrainingRunner(TrainingMetricsSnapshots):
     def __init__(self, env_config: dict, algorithm_config: dict,
                  num_envs=None, total_sampled_steps=None, device=None, seed=None,
                  output_dir=None, smoke=False):
@@ -103,6 +104,7 @@ class MADSACTrainingRunner:
         self.next_console = self.console_interval
         self.next_evaluation = self.evaluation_interval
         self.next_checkpoint = self.checkpoint_interval
+        self.initialize_training_metrics_logging()
 
     def startup_summary(self):
         return {
@@ -175,7 +177,7 @@ class MADSACTrainingRunner:
             "replay_size": len(self.replay), **self.last_metrics,
         }
         with (self.output_dir / "training_metrics.jsonl").open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(record) + "\n")
+            stream.write(json.dumps(record, separators=(",", ":")) + "\n")
 
     def _write_optimization(self, metrics):
         record = {"sampled_steps": self.trainer.sampled_steps,
@@ -299,7 +301,7 @@ class MADSACTrainingRunner:
                     for _ in range(self.gradient_steps):
                         self.last_metrics = self.trainer.update(self.replay.sample(self.minibatch_size))
                         self._write_optimization(self.last_metrics)
-                self._write_training_metrics(result, rows)
+                self.record_training_metrics_transition(result, rows, self._write_training_metrics)
                 if self.trainer.sampled_steps >= self.next_console:
                     recent = self.recent_metrics()
                     print(f"[TRAIN] steps={self.trainer.sampled_steps}/{self.total_sampled_steps} "
@@ -322,6 +324,7 @@ class MADSACTrainingRunner:
             exact = self.output_dir / f"checkpoint_{self.trainer.sampled_steps}.pt"
             if not exact.exists():
                 self.save_checkpoint(exact)
+            self.finalize_training_metrics_logging(self._write_training_metrics)
             self.save_checkpoint(self.output_dir / "latest.pt")
             self.save_checkpoint(self.output_dir / "final.pt")
             return self.summary()

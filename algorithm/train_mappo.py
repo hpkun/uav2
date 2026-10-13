@@ -292,7 +292,7 @@ def prepare_resume_rollback(
             backup = _backup_path(path, timestamp)
             shutil.copy2(path, backup)
             kept = [
-                json.dumps(record)
+                json.dumps(record, separators=(",", ":")) if name == "training_metrics.jsonl" else json.dumps(record)
                 for record in records
                 if int(record["sampled_steps"]) <= checkpoint_steps
             ]
@@ -480,6 +480,8 @@ def main() -> None:
                     resume_checkpoint,
                     int(resume_state.get("sampled_steps", 0)),
                 )
+                # Rollback may have removed future sparse/high-frequency metrics.
+                runner.restore_training_metrics_logging()
                 original = runtime["original"] or {
                     "seed": runtime["seed"],
                     "num_envs": runtime["num_envs"],

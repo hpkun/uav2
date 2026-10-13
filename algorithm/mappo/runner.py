@@ -22,9 +22,10 @@ from algorithm.common.checkpoint import (
     validate_checkpoint_for_resume,
 )
 from algorithm.common.protocol import config_sha256, validate_single_round_environment_config
+from algorithm.common.training_metrics_logging import TrainingMetricsSnapshots
 
 
-class MAPPOTrainingRunner:
+class MAPPOTrainingRunner(TrainingMetricsSnapshots):
     def __init__(self, env_config: dict, algorithm_config: dict,
                  num_envs: int | None = None,
                  total_sampled_steps: int | None = None,
@@ -99,6 +100,7 @@ class MAPPOTrainingRunner:
         self.next_console_log = self.console_interval
         self.next_evaluation = self.evaluation_interval
         self.next_checkpoint = self.checkpoint_interval
+        self.initialize_training_metrics_logging()
 
     def startup_summary(self) -> dict[str, Any]:
         return {
@@ -211,7 +213,7 @@ class MAPPOTrainingRunner:
             from algorithm.common.pursuit_metrics import pursuit_step_metrics
             record = pursuit_step_metrics(result, self.trainer.sampled_steps, self.last_metrics)
             with (self.output_dir / "training_metrics.jsonl").open("a", encoding="utf-8") as stream:
-                stream.write(json.dumps(record) + "\n")
+                stream.write(json.dumps(record, separators=(",", ":")) + "\n")
             return
         mean = lambda key: float(np.mean([r[key] for r in rows])) if rows else None
         rate = lambda predicate: float(np.mean([predicate(r) for r in rows])) if rows else None
@@ -249,7 +251,7 @@ class MAPPOTrainingRunner:
                 "value", "explained_variance", "actor_grad_norm", "critic_grad_norm")},
         }
         with (self.output_dir / "training_metrics.jsonl").open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(record) + "\n")
+            stream.write(json.dumps(record, separators=(",", ":")) + "\n")
 
     def collect_rollout(self, vector_steps: int | None = None) -> RolloutBatch:
         storage = {key: [] for key in ("observations", "actions", "raw_actions", "old_log_probs",
@@ -273,7 +275,7 @@ class MAPPOTrainingRunner:
             rows = self._completed(result)
             self.observations, self.alive_masks = result.observations, self.vector.current_alive_masks.copy()
             self.trainer.sampled_steps += self.num_envs; self.trainer.vector_steps += 1
-            self._write_step_metrics(result, rows)
+            self.record_training_metrics_transition(result, rows, self._write_step_metrics)
         return RolloutBatch(**{key: np.stack(value).astype(np.float32)
                                for key, value in storage.items()})
 
@@ -315,6 +317,7 @@ class MAPPOTrainingRunner:
                     self.save_checkpoint(path); print(self.checkpoint_log_line(self.trainer.sampled_steps, path), flush=True)
                     while self.next_checkpoint <= self.trainer.sampled_steps:
                         self.next_checkpoint += self.checkpoint_interval
+            self.finalize_training_metrics_logging(self._write_step_metrics)
             self.save_checkpoint(self.output_dir / "latest.pt")
             return self.summary()
         finally:
@@ -398,6 +401,7 @@ class MAPPOTrainingRunner:
         self.next_console_log = (self.trainer.sampled_steps // self.console_interval + 1) * self.console_interval
         self.next_evaluation = (self.trainer.sampled_steps // self.evaluation_interval + 1) * self.evaluation_interval
         self.next_checkpoint = (self.trainer.sampled_steps // self.checkpoint_interval + 1) * self.checkpoint_interval
+        self.restore_training_metrics_logging()
 
     def summary(self) -> dict[str, Any]:
         if self.env_config["task_type"] == "pursuit":
