@@ -1,5 +1,7 @@
 # Multi-UAV Cooperative Air Combat
 
+新增隔离的 **v3.32 / 4v4 / 47D**：仅 Red 使用 `[a_mu,a_t,a_n]` 到物理过载目标、独立 circular rate limiter，再进入原 dynamics/RK4；Blue 继续使用 v3.31 的 heading/pitch/speed controller。入口配置为 `configs/combat_environment_v332.yaml` 和 `configs/mappo_4v4_v332.yaml`，不覆盖任何旧版本默认值。详见 [v3.32 Red 控制协议](docs/v332_red_direct_control.md) 和 [本轮验收](reports/v332_acceptance.md)。
+
 当前正式 5v5 MAPPO 是 shared-parameter MAPPO with a centralized MLP critic；STEA-MAPPO 保留 entity-attention + GRU actor，并使用完全相同的 MLP critic。Actor/critic 宽度分别读取配置，旧 attention checkpoint 使用各自 run snapshots 继续评估。详见 [critic 协议](docs/centralized_critic_protocol.md)。下文的 4v4 说明保留原 v2.3 协议。
 
 这是一个面向 multi-UAV cooperative air combat 的多智能体强化学习研究代码库。任务为普通单回合 **4v4** 空战：4 架 Red UAV 使用共享的 learned policy，4 架 Blue UAV 使用确定性的 nearest-target pursuit policy。项目提供 **MAPPO** 和 **MADSAC** 两个独立 baseline，以及 Actor 使用实体注意力与 GRU 的独立变体 **STEA-MAPPO**。

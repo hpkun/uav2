@@ -1,0 +1,361 @@
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  7%]
+............................................................F........... [  9%]
+.....................................................F.................. [ 12%]
+.................F...................................................... [ 14%]
+........................................................................ [ 17%]
+................................................F....................... [ 19%]
+.........................................F.............................. [ 22%]
+........................................................................ [ 24%]
+........................................................F............... [ 26%]
+.........................F.............................F................ [ 29%]
+........................................................................ [ 31%]
+.....F.................................................................. [ 34%]
+........................................................................ [ 36%]
+...F.................................................................... [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 44%]
+...................................................F.................... [ 46%]
+...FFFF................................................................. [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 53%]
+........................................................................ [ 56%]
+........................................................................ [ 58%]
+........................................................................ [ 61%]
+........................................................................ [ 63%]
+........................................................................ [ 66%]
+........................................................................ [ 68%]
+........................................................................ [ 71%]
+..............................................................F......... [ 73%]
+........................................................................ [ 76%]
+........................................................................ [ 78%]
+..............................F......................................... [ 80%]
+....F.............................................F..................... [ 83%]
+.............................F.................................F........ [ 85%]
+...............................................................F........ [ 88%]
+.FFFFFF...........................................................FFFF.. [ 90%]
+........................................................................ [ 93%]
+........................................................................ [ 95%]
+........................................................................ [ 98%]
+....................................ss................                   [100%]
+================================== FAILURES ===================================
+_________________ test_factory_and_public_api_are_combat_only _________________
+..\uav1\tests\test_combat_protocol.py:35: in test_factory_and_public_api_are_combat_only
+    assert sorted(p.name for p in (ROOT / 'configs').glob('*.yaml')) == [
+E   AssertionError: assert ['combat_envi...28.yaml', ...] == ['combat_envi...28.yaml', ...]
+E     
+E     At index 29 diff: 'combat_environment_v329.yaml' != 'combat_environment_v33.yaml'
+E     Left contains 14 more items, first extra item: 'stea_mappo_5v5_v315.yaml'
+E     Use -v to get more diff
+________________ test_mp4_probe_and_stride_fire_event_visible _________________
+D:\conda_envs\envs_dirs\uav\lib\site-packages\PIL\Image.py:2666: in save
+    format = EXTENSION[ext]
+E   KeyError: '.mp4'
+
+The above exception was the direct cause of the following exception:
+..\uav1\tests\test_combat_v24_videos.py:190: in test_mp4_probe_and_stride_fire_event_visible
+    movie = render(output / 'episode_trace.npz', output / 'metadata.json', tmp_path / 'video.mp4')
+tools\render_combat_episode.py:110: in render
+    animation.save(output, writer='pillow' if output.suffix.lower() == '.gif' else 'ffmpeg', fps=fps)
+D:\conda_envs\envs_dirs\uav\lib\site-packages\matplotlib\animation.py:1110: in save
+    with (writer.saving(self._fig, filename, dpi),
+D:\conda_envs\envs_dirs\uav\lib\contextlib.py:142: in __exit__
+    next(self.gen)
+D:\conda_envs\envs_dirs\uav\lib\site-packages\matplotlib\animation.py:226: in saving
+    self.finish()
+D:\conda_envs\envs_dirs\uav\lib\site-packages\matplotlib\animation.py:506: in finish
+    self._frames[0].save(
+D:\conda_envs\envs_dirs\uav\lib\site-packages\PIL\Image.py:2669: in save
+    raise ValueError(msg) from e
+E   ValueError: unknown file extension: .mp4
+------------------------------ Captured log call ------------------------------
+WARNING  matplotlib.animation:animation.py:1085 MovieWriter ffmpeg unavailable; using Pillow instead.
+________________ test_old_protocol_full_episode_replay[case4] _________________
+..\uav1\tests\test_combat_v25.py:135: in test_old_protocol_full_episode_replay
+    assert digest.hexdigest()==case['sha256']
+E   AssertionError: assert 'f604622ac711...09ed9e0306f5e' == 'be338126baa5...de5eff3a81a74'
+E     
+E     - be338126baa5dbfc04866eb54cd19e6d70a05b483a1e64ec877de5eff3a81a74
+E     + f604622ac711da6e70509791bc86f5c344d09a725c33099cf7c09ed9e0306f5e
+_____________________ test_legacy_bit_level_trajectories ______________________
+..\uav1\tests\test_combat_v31.py:19: in test_legacy_bit_level_trajectories
+    assert capture()==json.loads((ROOT/'tests/v31_legacy_reference.json').read_text())
+E   AssertionError: assert {'23': {'1': ...981e82'}, ...} == {'23': {'1': ...ed6b40'}, ...}
+E     
+E     Differing items:
+E     {'24': {'1': '0bdb18fcf661113a8e61ab9ff3537cb887102ff9f128e0531ace811af21614c6', '31': 'a90de0d0e088fae20f4c85c3609fe7b25930222c0aaa5f96c927d746a0ead711', '32000000': '0a0f6ab47bac032b9f782eba1c6ead1facaa70a627ea613e0e9e554c32f33621'}} != {'24': {'1': '4ad5f19fa55fe87f86e8300732a425b9b12f96bdc965eee869ae4fa6f8ae38df', '31': '1a2948a9877a74d8e78cf1546b2b6bb6c9e48d947137fd7c476ecbb197b7d145', '32000000': '4c3ff1916968f8051c4367bdd4b43d49e0f8f1e0e860783d9e6ad1d6e0073c46'}}
+E     {'26': {'1': '9f25a516115a3a53befe0d53290d0002c93bbe9ac9cdef7f277474c2d2bf6777', '31':...
+E     
+E     ...Full output truncated (8 lines hidden), use '-vv' to show
+__________________ test_complete_pre_extension_v39_reference __________________
+..\uav1\tests\test_combat_v310.py:264: in test_complete_pre_extension_v39_reference
+    assert capture39() == json.loads((ROOT / 'tests/v310_v39_reference.json').read_text())
+E   AssertionError: assert {'ZERO_1': 'a...adf9019', ...} == {'ZERO_1': 'b...7adc55e', ...}
+E     
+E     Differing items:
+E     {'ZERO_40000000': '9deb7d4b5bd360cef8bfab5a5264fa6eaf2205c16d220a7c8c1693742adf9019'} != {'ZERO_40000000': '9f77e5f59afcb31df3c458812b573db36d624fdc99643c97800f488017adc55e'}
+E     {'MIRROR_10000000': '5bb26fc19a50e58941608d05cf02f0813c1ea8d024d56f8aba0fd5a30462dcb4'} != {'MIRROR_10000000': 'd3b85d0f11dd63407cae7ac72c3bacd61135139805783340a9fc7da4b64c6616'}
+E     {'MIRROR_40000000': 'c97b18a665993edda5ef2e8d89dda4bf14ff4eed042f893bf3e97c70c095a21d'} != {'MIRROR_40000000': 'a8527dc50a05b242425a3fbdf89dab2a24e4880af669be504f6d963524262cd7'}
+E     {'ZERO_1': 'ae83003d74ce34ca49...
+E     
+E     ...Full output truncated (6 lines hidden), use '-vv' to show
+________________ test_previous_v310_full_trajectory_reference _________________
+..\uav1\tests\test_combat_v311.py:300: in test_previous_v310_full_trajectory_reference
+    assert capture310() == json.loads(Path('tests/v311_v310_reference.json').read_text())
+E   AssertionError: assert {'ZERO_1': 'f...720d58a', ...} == {'ZERO_1': '7...3a150b3', ...}
+E     
+E     Differing items:
+E     {'ZERO_1': 'fff6549c1b9a52bc728bc9e5b05753630fa0248b1a3634e4b5fe9285c05e1a47'} != {'ZERO_1': '70be74c9181bf5c029dbafe1c5aa946d26cc4a676df2104095e1bcc2f009888a'}
+E     {'ZERO_10000000': 'afafabf1baac16accce44a900182cb940c82106dae75e999eb17b57611c5d931'} != {'ZERO_10000000': 'f4e65c63e7b6ac40664116510011c86de0985602202afb19a54445c3b48a25ba'}
+E     {'ZERO_31': 'f789d683e1837114ae8ffed49f9591f9e5ac0f1d8ee482d679ad1eaea1aefb3e'} != {'ZERO_31': '2317f324f37dc59f83663a9fce16ff89db651b8fc94cd17af60bdde82a1ad0b8'}
+E     {'PURSUIT_31': 'e0ce6b4d3b46a7790b0f85e892bbe07218b259e66a38d139...
+E     
+E     ...Full output truncated (4 lines hidden), use '-vv' to show
+___________ test_v311_full_reference_and_legacy_entity_actor_exact ____________
+..\uav1\tests\test_combat_v312.py:260: in test_v311_full_reference_and_legacy_entity_actor_exact
+    assert capture311() == json.loads(Path('tests/v312_v311_reference.json').read_text())
+E   AssertionError: assert {'ZERO_1': 'f...e0e12fb', ...} == {'ZERO_1': 'f...68929c2', ...}
+E     
+E     Omitting 5 identical items, use -vv to show
+E     Differing items:
+E     {'PURSUIT_1': '90725aaa03d490491b2c8af78956c5482d51e2d34981a97ac6a3b54dde0e12fb'} != {'PURSUIT_1': '1eb34ec8bd8671a9d5cacd18c4fa8be13908f31c60c9736529e91139668929c2'}
+E     Use -v to get more diff
+________________ test_v312_full_trajectory_reference_unchanged ________________
+..\uav1\tests\test_combat_v313.py:215: in test_v312_full_trajectory_reference_unchanged
+    assert capture312() == json.loads(Path('tests/v313_v312_reference.json').read_text())
+E   AssertionError: assert {'ZERO_1': '2...3057266', ...} == {'ZERO_1': '8...414642c', ...}
+E     
+E     Differing items:
+E     {'ZERO_1': '2f99eb80b20f75f36494f727b064c7ade1eafef6c3371173d0b578a4dc3b856e'} != {'ZERO_1': '817ea8783aee597652a3bb6e5bc3addd42a321347ae67a9bcd4e4d494299d6c8'}
+E     {'ZERO_10000000': 'f17e85fd7c7443ae418c4f55c8d5a580fa54790eef6776eddabd953d28a597ee'} != {'ZERO_10000000': '8c854cc73730f9efc9e15d1b916ee5d7bf03811b9b8824458dc98ea6b05d59fe'}
+E     {'ZERO_31': 'ecaf02c0bfaa56cca57128f2745201abc90dd65da2c1f9a34fbfcd6f7df140d9'} != {'ZERO_31': '16ee3d223b7de18c914fed018267d69716ac437884b7b98e28b70b8997200a01'}
+E     {'PURSUIT_31': '6797cc1a62ddccc7d70e5d72689feb593487e6b209c89519...
+E     
+E     ...Full output truncated (4 lines hidden), use '-vv' to show
+________________ test_existing_four_checkpoint_isolation_cuda _________________
+..\uav1\tests\test_combat_v314.py:331: in test_existing_four_checkpoint_isolation_cuda
+    rows=check_checkpoint_isolation()
+tools\validate_combat_v314.py:34: in check_checkpoint_isolation
+    raise RuntimeError(f'required existing v3.13 checkpoint missing: {checkpoint}')
+E   RuntimeError: required existing v3.13 checkpoint missing: C:\Users\HPK\Desktop\uav2\outputs\v313_validation\cuda_smoke\mappo\latest.pt
+_________ test_checkpoint_isolation_and_old_zero_counterfactual_cuda __________
+..\uav1\tests\test_combat_v315.py:223: in test_checkpoint_isolation_and_old_zero_counterfactual_cuda
+    assert all(row['old_accepted'] and row['cross_version_rejected'] for row in check_checkpoint_isolation().values())
+tools\validate_combat_v315.py:28: in check_checkpoint_isolation
+    if not path.exists():raise RuntimeError(f'required existing v3.14 checkpoint missing: {path}')
+E   RuntimeError: required existing v3.14 checkpoint missing: C:\Users\HPK\Desktop\uav2\outputs\v314_validation\cuda_smoke\mappo\latest.pt
+____________ test_legacy_complete_terminal_trajectories_unchanged _____________
+..\uav1\tests\test_combat_v32.py:29: in test_legacy_complete_terminal_trajectories_unchanged
+    assert capture()==json.loads((ROOT/'tests/v32_legacy_reference.json').read_text())
+E   AssertionError: assert {'30_ZERO_1':...0751257', ...} == {'30_ZERO_1':...a61f225', ...}
+E     
+E     Differing items:
+E     {'30_ZERO_33000000': '5c73644d3a31af25caa3c2ca79ac9822e1e7b5e8d4d9cdeccd6e536770751257'} != {'30_ZERO_33000000': '13c72ac2ea94a54e47e57fcd753feebab03cd6fbf1faf6fd75086da8ea61f225'}
+E     {'31_MIRROR_1': '2b502613f8741baf7fd1316cddc749ed245b2243687bf6e86db3b9c5c9cd5fe2'} != {'31_MIRROR_1': '500b1346d46f6d91e5a78f19c26b8574ee7257e4e3b1deefd1da39043ee91e03'}
+E     {'30_MIRROR_31': '34fb994d44f7ccbbc7ceaeeded6d21c312f6c7497b29f855386e734c57dd44f8'} != {'30_MIRROR_31': '4be205eec2d3e01575624b4926e4c3bcba61dc5b38b3ba3dc90f663eb2c27e4a'}
+E     {'30_MIRROR_32000000': 'b1fd6c4081a785...
+E     
+E     ...Full output truncated (14 lines hidden), use '-vv' to show
+_____ test_true_truncated_episode_in_training_metrics_and_summary[mappo] ______
+..\uav1\tests\test_combat_v32.py:133: in test_true_truncated_episode_in_training_metrics_and_summary
+    runner._accumulate_rollout_metrics(SimpleNamespace(rewards=reward[None,:],infos=[info]),[row])
+algorithm\mappo\runner.py:225: in _accumulate_rollout_metrics
+    if self.env_config['environment_version'] in ('3.29','3.30','3.31','3.32'):
+E   AttributeError: 'MAPPOTrainingRunner' object has no attribute 'env_config'
+_____ test_true_truncated_episode_in_training_metrics_and_summary[rmappo] _____
+..\uav1\tests\test_combat_v32.py:133: in test_true_truncated_episode_in_training_metrics_and_summary
+    runner._accumulate_rollout_metrics(SimpleNamespace(rewards=reward[None,:],infos=[info]),[row])
+algorithm\mappo\runner.py:225: in _accumulate_rollout_metrics
+    if self.env_config['environment_version'] in ('3.29','3.30','3.31','3.32'):
+E   AttributeError: 'RMAPPOTrainingRunner' object has no attribute 'env_config'
+____ test_true_truncated_episode_in_training_metrics_and_summary[ea-mappo] ____
+..\uav1\tests\test_combat_v32.py:133: in test_true_truncated_episode_in_training_metrics_and_summary
+    runner._accumulate_rollout_metrics(SimpleNamespace(rewards=reward[None,:],infos=[info]),[row])
+algorithm\mappo\runner.py:225: in _accumulate_rollout_metrics
+    if self.env_config['environment_version'] in ('3.29','3.30','3.31','3.32'):
+E   AttributeError: 'EAMAPPOTrainingRunner' object has no attribute 'env_config'
+___ test_true_truncated_episode_in_training_metrics_and_summary[stea-mappo] ___
+..\uav1\tests\test_combat_v32.py:133: in test_true_truncated_episode_in_training_metrics_and_summary
+    runner._accumulate_rollout_metrics(SimpleNamespace(rewards=reward[None,:],infos=[info]),[row])
+algorithm\mappo\runner.py:225: in _accumulate_rollout_metrics
+    if self.env_config['environment_version'] in ('3.29','3.30','3.31','3.32'):
+E   AttributeError: 'STEAMAPPOTrainingRunner' object has no attribute 'env_config'
+___________ test_historical_v30_v31_v32_full_info_and_reward_bytes ____________
+..\uav1\tests\test_combat_v33.py:29: in test_historical_v30_v31_v32_full_info_and_reward_bytes
+    assert capture()==json.loads((ROOT/'tests/v33_legacy_reference.json').read_text())
+E   AssertionError: assert {'30_ZERO_1':...863c485', ...} == {'30_ZERO_1':...df2dec4', ...}
+E     
+E     Differing items:
+E     {'32_MIRROR_33000000': '7d2fa6b6dcc79d58cd7173c276f6a7113a73eeea1e1b434c10a6e28fff3711ed'} != {'32_MIRROR_33000000': '9bf15d8955e4292482893fa4d818717bebd18d1c33e2c8713d7041cf842dee69'}
+E     {'30_ZERO_31': 'a87c3483a9c412ad762f2fbe71886e7cff0f3f97942363999366c3ccd8bb50ce'} != {'30_ZERO_31': '6270927d0dfd1f655d1520190aefbc59b18dbeb5bfc2ef5557f5d99667c7fe79'}
+E     {'31_MIRROR_33000000': 'ed9c236715841c1de8be2d0903ceb30ab788691868c5cccccb689636ebb45424'} != {'31_MIRROR_33000000': 'a2e3cf20c6b0381b4d8be228a8697434effe22e31a5146de09ac66c6b2a835b8'}
+E     {'31_MIRROR_32000000': '...
+E     
+E     ...Full output truncated (22 lines hidden), use '-vv' to show
+_____________________ test_v33_pre_change_full_reference ______________________
+..\uav1\tests\test_combat_v34.py:117: in test_v33_pre_change_full_reference
+    assert capture33()==json.loads((ROOT/'tests/v34_v33_reference.json').read_text())
+E   AssertionError: assert {'ZERO_1': 'a...e612c9c', ...} == {'ZERO_1': '1...31ac771', ...}
+E     
+E     Differing items:
+E     {'MIRROR_33000000': '3443dcecb9084a2de57203c590b63336e0a0453c2e62702ce0b6b4ab5a1959b3'} != {'MIRROR_33000000': '93a0c60e3201e424343cfc2e198b96883263cbddead3dc3d036ebf6a82dc65ba'}
+E     {'ZERO_1': 'a8f53bc07f208f6eb41f060a0fe84fb0d935ebb170105ee3852f9e5dd5c46a8a'} != {'ZERO_1': '1319c43f85ec6560b10dac31c9d5d47d2c481755363df4d01bce6015d744d699'}
+E     {'MIRROR_32000000': '11eb4eced1e0a10024abf3f2860ec321a532ea10d3d31e25ddf95b8cd9dc8f72'} != {'MIRROR_32000000': '5caacd2dbc29975a2db2f52eec88347a947181550b26a9b5861fef2379b55b45'}
+E     {'ZERO_31': '826a36aebd87df6045c3f6e17085211...
+E     
+E     ...Full output truncated (6 lines hidden), use '-vv' to show
+______________________ test_v34_full_prechange_reference ______________________
+..\uav1\tests\test_combat_v35.py:182: in test_v34_full_prechange_reference
+    assert capture34()==json.loads((ROOT/'tests/v35_v34_reference.json').read_text())
+E   AssertionError: assert {'ZERO_1': 'a...4ac1426', ...} == {'ZERO_1': 'a...ec88b8c', ...}
+E     
+E     Differing items:
+E     {'MIRROR_39000000': '3f254fca80dd465f9e4f05308f25e3f1f544db4a6c85d373be6cc9c6103e70e4'} != {'MIRROR_39000000': 'ebfd774cf2139bc9b9cab508df88dd50b0bdd0995b11e2b5818e657c9c0e662c'}
+E     {'MIRROR_33000000': '0bd5cdb06f298dd97005836298c3b3f6be8c79c91b80cb4f9de0bf161f007192'} != {'MIRROR_33000000': '21d4d70c59e6e448285ddd483532364c324ba1ffaba81f8bbbb598ac9e7d838e'}
+E     {'ZERO_1': 'aa0b09f7289d6a6eb8f0ca2a8bae6e9aeeae979e451fb4bee2596a328e280f90'} != {'ZERO_1': 'ae599d638ca04a7ff9c22d4dfd384ea1ef105b558510185e1f99b345b39497bf'}
+E     {'ZERO_31': '89c2d60b57c4eb0058c3cf9776dbb23...
+E     
+E     ...Full output truncated (6 lines hidden), use '-vv' to show
+____________________ test_complete_v35_pre_hook_reference _____________________
+..\uav1\tests\test_combat_v36.py:151: in test_complete_v35_pre_hook_reference
+    assert capture35()==json.loads((ROOT/'tests/v36_v35_reference.json').read_text())
+E   AssertionError: assert {'ZERO_1': '6...7f13f98', ...} == {'ZERO_1': 'd...c79f476', ...}
+E     
+E     Differing items:
+E     {'ZERO_40000000': 'f40d889f8f2013ebf2669036336ba297b5886f6e2b66ba5f0c75516c87f13f98'} != {'ZERO_40000000': '037b3c4679d6e3031efe719cef1013819516f5ec80c413363783a04dfc79f476'}
+E     {'MIRROR_10000000': '447740503e2f6fb25fbb561bd8650a45629860b92b3bd417db30a5fcf5fbdf47'} != {'MIRROR_10000000': '47616a65d7058a2a832f10b25dbbd23a11486bbf2b579cc041da04763df3d3f2'}
+E     {'MIRROR_40000000': '3bffd972d908569bbe4d350b528c6e7775a64e27895202b82b9c3f85514d6d56'} != {'MIRROR_40000000': 'bcd72f2887f95722a3d67d7348839014f78a34c37a15e63dda85464c7c9657c9'}
+E     {'ZERO_1': '6aa938646273e75656...
+E     
+E     ...Full output truncated (6 lines hidden), use '-vv' to show
+_____________ test_configuration_isolation_and_original_reference _____________
+..\uav1\tests\test_combat_v37.py:152: in test_configuration_isolation_and_original_reference
+    assert capture36()==json.loads((ROOT/'tests/v37_v36_reference.json').read_text())
+E   AssertionError: assert {'ZERO_1': 'a...a60de23', ...} == {'ZERO_1': 'e...bbce80b', ...}
+E     
+E     Differing items:
+E     {'ZERO_40000000': '1b11d53dd375e29a31b5c8cd64a5c7fd9da3063580da5cef5c41a0267a60de23'} != {'ZERO_40000000': 'a2503c6b98bf6083b5e655cf916106355abc986ae7d8b38f2a4d0ee24bbce80b'}
+E     {'MIRROR_10000000': '8056e45f3e9d15a977c3bcfb1f264527af01e3ab4b09fda84a90fa90d53a3709'} != {'MIRROR_10000000': 'c781743b8e40e737258a6ecc9c2690143bb4fbe6fabd4b3188ecad2ca924bd0a'}
+E     {'MIRROR_40000000': '1f6444cd9540a4afb45221508a28a41cc38af8c10c8311523a86ede745d82820'} != {'MIRROR_40000000': '70c69e3c4a2eaa5b94a2ce256203e1de437200a4df9d7ce028f740fd1be7e6bf'}
+E     {'ZERO_1': 'ad077df705b20f9a72...
+E     
+E     ...Full output truncated (6 lines hidden), use '-vv' to show
+_____ test_inherited_parameters_methods_algorithm_bytes_and_old_reference _____
+..\uav1\tests\test_combat_v38.py:86: in test_inherited_parameters_methods_algorithm_bytes_and_old_reference
+    assert capture37()==json.loads((ROOT/'tests/v38_v37_reference.json').read_text())
+E   AssertionError: assert {'ZERO_1': '1...1c3788f', ...} == {'ZERO_1': '5...c34cbc7', ...}
+E     
+E     Differing items:
+E     {'ZERO_40000000': '3fe1b2968ff98475f30d9d42a85db6622fea4b47854c6f7e3da44a1df1c3788f'} != {'ZERO_40000000': '43a43d47ed42c6288b0d33df04a9db1f68363770bb94ef69fb45a43f8c34cbc7'}
+E     {'MIRROR_10000000': 'a8c26ad3850306d9037c8407c11280810e9facc81f71742f08c1eb77e1e46678'} != {'MIRROR_10000000': 'cefb0f969c317beaca179f25566f17e4e0851eeea67e7fb5fbdc6d969adf752f'}
+E     {'MIRROR_40000000': 'aaac20b96dc9192b3ef079b68da5bfc00114456d12209cc078b3c6c1b38f1913'} != {'MIRROR_40000000': '62c1b9ca7da7a69379a70f38b29b6ed5ca89139aae98d72c5c6cc3c73ff517d1'}
+E     {'ZERO_1': '18024257fe78864117...
+E     
+E     ...Full output truncated (6 lines hidden), use '-vv' to show
+____________ test_complete_pre_extension_v38_trajectory_reference _____________
+..\uav1\tests\test_combat_v39.py:201: in test_complete_pre_extension_v38_trajectory_reference
+    assert capture38() == json.loads((ROOT / 'tests/v39_v38_reference.json').read_text())
+E   AssertionError: assert {'ZERO_1': '7...a48da02', ...} == {'ZERO_1': '7...696a371', ...}
+E     
+E     Differing items:
+E     {'ZERO_40000000': '65607c0a407f3693aa3b78f1b7ab6b46fee3f1c945686f109fe9580f6a48da02'} != {'ZERO_40000000': '0e137f5bb2e0ca72c14e7837c948448456a218ab48e5caf37043bc5b5696a371'}
+E     {'MIRROR_10000000': 'b97cbce822556912d72e46df7ef99c70689e1123c1969c97c80dfa59dcfa0a5b'} != {'MIRROR_10000000': 'b670f22a3eeaa8cb7305a2e19a32904c553cda9d246358b28f60fac472df0b3c'}
+E     {'MIRROR_40000000': 'e8f999fd99df5a3ef2fadfe791e125f792eff7f54234e53f69b5711be01db9f7'} != {'MIRROR_40000000': 'cb15ccd2621e9921623af0d1f0926a00cf7a19eb400178b0d4551996eb8f9e5f'}
+E     {'ZERO_1': '7575d592099e8009ad...
+E     
+E     ...Full output truncated (6 lines hidden), use '-vv' to show
+_____ test_one_weighted_summary_after_whole_rollout[MAPPOTrainingRunner] ______
+..\uav1\tests\test_compact_training_metrics.py:42: in test_one_weighted_summary_after_whole_rollout
+    r._accumulate_rollout_metrics(result(1,1),[episode(10)])
+algorithm\mappo\runner.py:225: in _accumulate_rollout_metrics
+    if self.env_config['environment_version'] in ('3.29','3.30','3.31','3.32'):
+E   AttributeError: 'MAPPOTrainingRunner' object has no attribute 'env_config'
+_____ test_one_weighted_summary_after_whole_rollout[RMAPPOTrainingRunner] _____
+..\uav1\tests\test_compact_training_metrics.py:42: in test_one_weighted_summary_after_whole_rollout
+    r._accumulate_rollout_metrics(result(1,1),[episode(10)])
+algorithm\mappo\runner.py:225: in _accumulate_rollout_metrics
+    if self.env_config['environment_version'] in ('3.29','3.30','3.31','3.32'):
+E   AttributeError: 'RMAPPOTrainingRunner' object has no attribute 'env_config'
+___ test_one_weighted_summary_after_whole_rollout[STEAMAPPOTrainingRunner] ____
+..\uav1\tests\test_compact_training_metrics.py:42: in test_one_weighted_summary_after_whole_rollout
+    r._accumulate_rollout_metrics(result(1,1),[episode(10)])
+algorithm\mappo\runner.py:225: in _accumulate_rollout_metrics
+    if self.env_config['environment_version'] in ('3.29','3.30','3.31','3.32'):
+E   AttributeError: 'STEAMAPPOTrainingRunner' object has no attribute 'env_config'
+____ test_one_weighted_summary_after_whole_rollout[EAMAPPOTrainingRunner] _____
+..\uav1\tests\test_compact_training_metrics.py:42: in test_one_weighted_summary_after_whole_rollout
+    r._accumulate_rollout_metrics(result(1,1),[episode(10)])
+algorithm\mappo\runner.py:225: in _accumulate_rollout_metrics
+    if self.env_config['environment_version'] in ('3.29','3.30','3.31','3.32'):
+E   AttributeError: 'EAMAPPOTrainingRunner' object has no attribute 'env_config'
+_________________ test_no_episodes_null_and_theoretical_count _________________
+..\uav1\tests\test_compact_training_metrics.py:60: in test_no_episodes_null_and_theoretical_count
+    r=bare(tmp_path);r._accumulate_rollout_metrics(result(1,0),[]);d=r._finalize_rollout_metrics()
+algorithm\mappo\runner.py:225: in _accumulate_rollout_metrics
+    if self.env_config['environment_version'] in ('3.29','3.30','3.31','3.32'):
+E   AttributeError: 'MAPPOTrainingRunner' object has no attribute 'env_config'
+___________ test_accumulation_and_serialization_do_not_consume_rng ____________
+..\uav1\tests\test_compact_training_metrics.py:68: in test_accumulation_and_serialization_do_not_consume_rng
+    r=bare(tmp_path);r._accumulate_rollout_metrics(batch,completed);r._write_rollout_metrics()
+algorithm\mappo\runner.py:225: in _accumulate_rollout_metrics
+    if self.env_config['environment_version'] in ('3.29','3.30','3.31','3.32'):
+E   AttributeError: 'MAPPOTrainingRunner' object has no attribute 'env_config'
+__ test_5v5_actor_weights_forward_and_deterministic_action_unchanged[mappo] ___
+..\uav1\tests\test_formal_8v8.py:142: in test_5v5_actor_weights_forward_and_deterministic_action_unchanged
+    for key,value in actor.state_dict().items(): assert torch.equal(value,ref['state_dict'][key])
+E   assert False
+E    +  where False = <built-in method equal of type object at 0x00007FF962E7DDC0>(tensor([[-0.0009,  0.0665, -0.1021,  ..., -0.0735,  0.0375,  0.0681],\n        [-0.0157,  0.0047,  0.0287,  ..., -0.060...1034, -0.0813,  ..., -0.0060, -0.0750, -0.0903],\n        [-0.0700,  0.0002,  0.0531,  ..., -0.0162, -0.0611,  0.1123]]), tensor([[-0.0009,  0.0665, -0.1021,  ..., -0.0735,  0.0375,  0.0681],\n        [-0.0157,  0.0047,  0.0287,  ..., -0.060...1034, -0.0813,  ..., -0.0060, -0.0750, -0.0903],\n        [-0.0700,  0.0002,  0.0531,  ..., -0.0162, -0.0611,  0.1123]]))
+E    +    where <built-in method equal of type object at 0x00007FF962E7DDC0> = torch.equal
+__ test_5v5_actor_weights_forward_and_deterministic_action_unchanged[rmappo] __
+..\uav1\tests\test_formal_8v8.py:142: in test_5v5_actor_weights_forward_and_deterministic_action_unchanged
+    for key,value in actor.state_dict().items(): assert torch.equal(value,ref['state_dict'][key])
+E   assert False
+E    +  where False = <built-in method equal of type object at 0x00007FF962E7DDC0>(tensor([[-0.0110,  0.0818,  0.0672,  ..., -0.0697, -0.0613, -0.0587],\n        [-0.0193, -0.0380,  0.1134,  ...,  0.063...0348,  0.0523,  ...,  0.1127,  0.0961, -0.0747],\n        [-0.0931,  0.0319, -0.0809,  ...,  0.0701,  0.0282,  0.0182]]), tensor([[-0.0110,  0.0818,  0.0672,  ..., -0.0697, -0.0613, -0.0587],\n        [-0.0193, -0.0380,  0.1134,  ...,  0.063...0348,  0.0523,  ...,  0.1127,  0.0961, -0.0747],\n        [-0.0931,  0.0319, -0.0809,  ...,  0.0701,  0.0282,  0.0182]]))
+E    +    where <built-in method equal of type object at 0x00007FF962E7DDC0> = torch.equal
+_ test_5v5_actor_weights_forward_and_deterministic_action_unchanged[ea_mappo] _
+..\uav1\tests\test_formal_8v8.py:142: in test_5v5_actor_weights_forward_and_deterministic_action_unchanged
+    for key,value in actor.state_dict().items(): assert torch.equal(value,ref['state_dict'][key])
+E   assert False
+E    +  where False = <built-in method equal of type object at 0x00007FF962E7DDC0>(tensor([[-0.0335,  0.2494,  0.2047, -0.0608,  0.0929, -0.1276,  0.2590],\n        [-0.2010,  0.0599,  0.0011, -0.2862, ...-0.2537,  0.3724, -0.2511, -0.3716, -0.1727],\n        [-0.1958,  0.2534, -0.3648,  0.0038,  0.1693,  0.2801, -0.2314]]), tensor([[-0.0335,  0.2494,  0.2047, -0.0608,  0.0929, -0.1276,  0.2590],\n        [-0.2010,  0.0599,  0.0011, -0.2862, ...-0.2537,  0.3724, -0.2511, -0.3716, -0.1727],\n        [-0.1958,  0.2534, -0.3648,  0.0038,  0.1693,  0.2801, -0.2314]]))
+E    +    where <built-in method equal of type object at 0x00007FF962E7DDC0> = torch.equal
+_ test_5v5_actor_weights_forward_and_deterministic_action_unchanged[stea_mappo] _
+..\uav1\tests\test_formal_8v8.py:142: in test_5v5_actor_weights_forward_and_deterministic_action_unchanged
+    for key,value in actor.state_dict().items(): assert torch.equal(value,ref['state_dict'][key])
+E   assert False
+E    +  where False = <built-in method equal of type object at 0x00007FF962E7DDC0>(tensor([[-0.0335,  0.2494,  0.2047, -0.0608,  0.0929, -0.1276,  0.2590],\n        [-0.2010,  0.0599,  0.0011, -0.2862, ...-0.2537,  0.3724, -0.2511, -0.3716, -0.1727],\n        [-0.1958,  0.2534, -0.3648,  0.0038,  0.1693,  0.2801, -0.2314]]), tensor([[-0.0335,  0.2494,  0.2047, -0.0608,  0.0929, -0.1276,  0.2590],\n        [-0.2010,  0.0599,  0.0011, -0.2862, ...-0.2537,  0.3724, -0.2511, -0.3716, -0.1727],\n        [-0.1958,  0.2534, -0.3648,  0.0038,  0.1693,  0.2801, -0.2314]]))
+E    +    where <built-in method equal of type object at 0x00007FF962E7DDC0> = torch.equal
+=========================== short test summary info ===========================
+FAILED tests/test_combat_protocol.py::test_factory_and_public_api_are_combat_only
+FAILED tests/test_combat_v24_videos.py::test_mp4_probe_and_stride_fire_event_visible
+FAILED tests/test_combat_v25.py::test_old_protocol_full_episode_replay[case4]
+FAILED tests/test_combat_v31.py::test_legacy_bit_level_trajectories - Asserti...
+FAILED tests/test_combat_v310.py::test_complete_pre_extension_v39_reference
+FAILED tests/test_combat_v311.py::test_previous_v310_full_trajectory_reference
+FAILED tests/test_combat_v312.py::test_v311_full_reference_and_legacy_entity_actor_exact
+FAILED tests/test_combat_v313.py::test_v312_full_trajectory_reference_unchanged
+FAILED tests/test_combat_v314.py::test_existing_four_checkpoint_isolation_cuda
+FAILED tests/test_combat_v315.py::test_checkpoint_isolation_and_old_zero_counterfactual_cuda
+FAILED tests/test_combat_v32.py::test_legacy_complete_terminal_trajectories_unchanged
+FAILED tests/test_combat_v32.py::test_true_truncated_episode_in_training_metrics_and_summary[mappo]
+FAILED tests/test_combat_v32.py::test_true_truncated_episode_in_training_metrics_and_summary[rmappo]
+FAILED tests/test_combat_v32.py::test_true_truncated_episode_in_training_metrics_and_summary[ea-mappo]
+FAILED tests/test_combat_v32.py::test_true_truncated_episode_in_training_metrics_and_summary[stea-mappo]
+FAILED tests/test_combat_v33.py::test_historical_v30_v31_v32_full_info_and_reward_bytes
+FAILED tests/test_combat_v34.py::test_v33_pre_change_full_reference - Asserti...
+FAILED tests/test_combat_v35.py::test_v34_full_prechange_reference - Assertio...
+FAILED tests/test_combat_v36.py::test_complete_v35_pre_hook_reference - Asser...
+FAILED tests/test_combat_v37.py::test_configuration_isolation_and_original_reference
+FAILED tests/test_combat_v38.py::test_inherited_parameters_methods_algorithm_bytes_and_old_reference
+FAILED tests/test_combat_v39.py::test_complete_pre_extension_v38_trajectory_reference
+FAILED tests/test_compact_training_metrics.py::test_one_weighted_summary_after_whole_rollout[MAPPOTrainingRunner]
+FAILED tests/test_compact_training_metrics.py::test_one_weighted_summary_after_whole_rollout[RMAPPOTrainingRunner]
+FAILED tests/test_compact_training_metrics.py::test_one_weighted_summary_after_whole_rollout[STEAMAPPOTrainingRunner]
+FAILED tests/test_compact_training_metrics.py::test_one_weighted_summary_after_whole_rollout[EAMAPPOTrainingRunner]
+FAILED tests/test_compact_training_metrics.py::test_no_episodes_null_and_theoretical_count
+FAILED tests/test_compact_training_metrics.py::test_accumulation_and_serialization_do_not_consume_rng
+FAILED tests/test_formal_8v8.py::test_5v5_actor_weights_forward_and_deterministic_action_unchanged[mappo]
+FAILED tests/test_formal_8v8.py::test_5v5_actor_weights_forward_and_deterministic_action_unchanged[rmappo]
+FAILED tests/test_formal_8v8.py::test_5v5_actor_weights_forward_and_deterministic_action_unchanged[ea_mappo]
+FAILED tests/test_formal_8v8.py::test_5v5_actor_weights_forward_and_deterministic_action_unchanged[stea_mappo]
+32 failed, 2900 passed, 2 skipped in 265.56s (0:04:25)
