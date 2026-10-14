@@ -22,9 +22,8 @@ def resolved(path: str) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--algorithm", choices=("mappo",), default="mappo")
     parser.add_argument("--checkpoint", required=True)
-    parser.add_argument("--env-config", default="configs/single_round_environment.yaml")
+    parser.add_argument("--env-config", default="configs/combat_environment.yaml")
     parser.add_argument("--algorithm-config", default="configs/mappo.yaml")
     parser.add_argument("--seed-base", type=int, required=True)
     parser.add_argument("--episodes", type=int, required=True)

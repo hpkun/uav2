@@ -1,4 +1,4 @@
-"""Synchronous batch API backed by persistent parallel environment workers."""
+"""Synchronous batch API backed by long-lived parallel environment workers."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,7 +12,7 @@ from env.process_worker import combat_environment_worker
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_COMBAT_CONFIG = PROJECT_ROOT / "configs/single_round_environment.yaml"
+DEFAULT_COMBAT_CONFIG = PROJECT_ROOT / "configs/combat_environment.yaml"
 
 
 @dataclass
@@ -28,7 +28,7 @@ class VectorStep:
 
 
 class ParallelVectorEnv:
-    """One persistent spawn subprocess per environment with synchronous batches."""
+    """One long-lived spawn subprocess per environment with synchronous batches."""
 
     backend = "multiprocess_spawn"
 
@@ -46,7 +46,6 @@ class ParallelVectorEnv:
         self.forbidden_seeds = set(map(int, forbidden_seeds))
         self.used_training_seeds: set[int] = set()
         self.episode_indices = np.zeros(num_envs, dtype=np.int64)
-        self.current_alive_masks = np.ones((num_envs, 4), dtype=np.float32)
         self.last_reset_seeds = np.zeros(num_envs, dtype=np.int64)
         self._closed = False
         context = mp.get_context("spawn")
@@ -73,9 +72,6 @@ class ParallelVectorEnv:
             self.worker_environment_classes = [
                 str(row["environment_class"]) for row in self.worker_metadata
             ]
-            self.worker_environment_variants = [
-                str(row["environment_variant"]) for row in self.worker_metadata
-            ]
             self.worker_fixed_policy_classes = [
                 str(row["fixed_policy_class"]) for row in self.worker_metadata
             ]
@@ -86,6 +82,7 @@ class ParallelVectorEnv:
             if len(dimensions) != 1:
                 raise RuntimeError(f"environment workers disagree on dimensions: {sorted(dimensions)}")
             self.observation_dim, self.action_dim, self.team_size = dimensions.pop()
+            self.current_alive_masks = np.ones((num_envs, self.team_size), dtype=np.float32)
             self.current_observations = np.zeros(
                 (num_envs, self.team_size, self.observation_dim), dtype=np.float32
             )
@@ -187,6 +184,8 @@ class ParallelVectorEnv:
     def step(self, actions: np.ndarray):
         result = self.step_batch(actions)
         return result.observations, result.rewards, result.terminated, result.truncated, result.infos
+
+
 
     def _ensure_open(self) -> None:
         if self._closed:

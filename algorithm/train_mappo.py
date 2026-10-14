@@ -56,11 +56,18 @@ def default_output_dir(seed: int) -> Path:
 
 
 def ensure_fresh_output_directory(output_dir: Path) -> None:
-    """Create or accept an empty directory, rejecting any existing contents."""
+    """Accept an empty run directory or a terminal.log opened by shell tee.
+
+    The shell can create terminal.log before Python starts. All training
+    artifacts still block a fresh run, so existing results cannot be overwritten.
+    """
     if output_dir.exists():
         if not output_dir.is_dir():
             raise RuntimeError(f"fresh output_dir is not a directory: {output_dir}")
-        if any(output_dir.iterdir()):
+        if any(
+            entry.name != "terminal.log" or entry.is_symlink() or not entry.is_file()
+            for entry in output_dir.iterdir()
+        ):
             raise RuntimeError(
                 f"fresh training output_dir is non-empty: {output_dir}; "
                 "choose a new run directory"
@@ -292,7 +299,7 @@ def prepare_resume_rollback(
             backup = _backup_path(path, timestamp)
             shutil.copy2(path, backup)
             kept = [
-                json.dumps(record, separators=(",", ":")) if name == "training_metrics.jsonl" else json.dumps(record)
+                json.dumps(record)
                 for record in records
                 if int(record["sampled_steps"]) <= checkpoint_steps
             ]
@@ -348,21 +355,14 @@ def main() -> None:
     parser.add_argument("--num-envs", type=int)
     parser.add_argument("--output-dir")
     parser.add_argument("--resume")
-    parser.add_argument("--init-actor-checkpoint")
-    parser.add_argument("--env-config", default="configs/single_round_environment.yaml")
+    parser.add_argument("--env-config", default="configs/combat_environment.yaml")
     parser.add_argument("--algorithm-config", default="configs/mappo.yaml")
     parser.add_argument("--smoke", action="store_true", default=None)
     args = parser.parse_args()
-    if args.resume and args.init_actor_checkpoint:
-        parser.error("--init-actor-checkpoint cannot be combined with --resume")
     env_path = resolved(args.env_config)
     env_config = yaml.safe_load(env_path.read_text(encoding="utf-8"))
     algorithm_path = resolved(args.algorithm_config)
     algorithm_config = yaml.safe_load(algorithm_path.read_text(encoding="utf-8"))
-    if args.init_actor_checkpoint:
-        from algorithm.mappo.actor_initialization import validate_actor_initialization
-        source_state = torch.load(resolved(args.init_actor_checkpoint), map_location="cpu", weights_only=False)
-        validate_actor_initialization(source_state, env_config)
     configured_seed = int(algorithm_config["training"]["seed"])
     path_seed = configured_seed if args.seed is None else args.seed
     output_dir, resume_checkpoint = resolve_run_paths(
@@ -379,6 +379,7 @@ def main() -> None:
         resume_state = torch.load(
             resume_checkpoint, map_location="cpu", weights_only=False
         )
+        validate_checkpoint_for_resume(resume_state, env_config, algorithm_config)
         stored_run_config = load_run_config(output_dir)
     runtime = resolve_runtime_settings(
         algorithm_config,
@@ -390,13 +391,6 @@ def main() -> None:
         run_config=stored_run_config,
         checkpoint_state=resume_state,
     )
-    if resume_state is not None:
-        identity = runtime["original"] or runtime
-        validate_checkpoint_for_resume(
-            resume_state, env_config, algorithm_config,
-            expected_training_seed=identity["seed"], expected_num_envs=identity["num_envs"],
-            expected_smoke=identity["smoke"],
-        )
     if resume_state is not None and stored_run_config is not None:
         extra = resume_state.get("extra", {})
         expected_checkpoint_protocol = {
@@ -408,7 +402,7 @@ def main() -> None:
             "algorithm_config_sha256": config_sha256(algorithm_config),
         }
         for field, expected in expected_checkpoint_protocol.items():
-            if field not in extra or extra[field] != expected:
+            if field in extra and extra[field] != expected:
                 raise RuntimeError(
                     f"resume checkpoint {field} mismatch with original run protocol: "
                     f"expected {expected!r}, got {extra[field]!r}"
@@ -424,13 +418,6 @@ def main() -> None:
         runtime["smoke"],
     )
     if resume_checkpoint is None:
-        if args.init_actor_checkpoint:
-            from algorithm.mappo.actor_initialization import initialize_actor
-            try:
-                initialize_actor(runner, resolved(args.init_actor_checkpoint))
-            except BaseException:
-                runner.vector.close()
-                raise
         write_yaml_snapshot(runner.output_dir / "env_config.yaml", env_config)
         write_yaml_snapshot(
             runner.output_dir / "algorithm_config.yaml", algorithm_config
@@ -440,9 +427,6 @@ def main() -> None:
             write_yaml_snapshot(path, config)
     startup = runner.startup_summary()
     run_config = {
-        "task_type": env_config["task_type"],
-        "action_semantics": env_config["action_semantics"],
-        "actor_initialization": runner.actor_initialization,
         "device": startup["device"],
         "seed": startup["seed"],
         "num_envs": startup["num_envs_M"],
@@ -450,7 +434,6 @@ def main() -> None:
         "smoke": runner.smoke,
         "environment_config_path": str(env_path),
         "algorithm_config_path": str(algorithm_path),
-        "environment_variant": startup["environment_variant"],
         "environment_version": str(env_config["environment_version"]),
         "algorithm": "MAPPO",
         "effective_hidden_dim": startup["effective_hidden_dim"],
@@ -480,8 +463,6 @@ def main() -> None:
                     resume_checkpoint,
                     int(resume_state.get("sampled_steps", 0)),
                 )
-                # Rollback may have removed future sparse/high-frequency metrics.
-                runner.restore_training_metrics_logging()
                 original = runtime["original"] or {
                     "seed": runtime["seed"],
                     "num_envs": runtime["num_envs"],

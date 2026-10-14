@@ -1,4 +1,4 @@
-"""Subprocess entry point for one single-round combat environment."""
+"""Subprocess entry point for one long-lived combat environment."""
 from __future__ import annotations
 
 import os
@@ -15,7 +15,6 @@ def combat_environment_worker(connection: Any, config: Any) -> None:
         connection.send(("ready", {
             "pid": os.getpid(),
             "environment_class": environment.__class__.__name__,
-            "environment_variant": environment.environment_variant,
             "fixed_policy_class": environment.fixed_policy.__class__.__name__,
             "observation_dim": int(environment.observation_dim),
             "action_dim": int(environment.action_dim),

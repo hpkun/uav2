@@ -14,7 +14,7 @@ from env.geometry import engagement_geometry
 from env.observation import build_team_observations
 from env.reward import paper_state_reward_components
 from env.scenario import random_combat_states
-from env.weapon import WeaponEnvelope
+from env.weapon import FireState, WeaponEnvelope
 from env.integrator import RK4Integrator
 from env.models import AircraftSpec, AircraftState
 
@@ -22,12 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def config():
-    return load_config(ROOT / "configs/single_round_environment.yaml")
-
-
-def legacy_config():
-    import yaml
-    return yaml.safe_load((ROOT/"legacy/single_round_v2/configs/single_round_environment.yaml").read_text(encoding="utf-8"))
+    return load_config(ROOT / "configs/combat_environment.yaml")
 
 
 def state(x=0.0, y=0.0, altitude=3000.0, psi=0.0, theta=0.0,
@@ -41,7 +36,7 @@ def one_alive(primary):
 
 def test_version_and_frozen_bottom_level_contract():
     cfg = config()
-    assert cfg["environment_version"] == ENVIRONMENT_VERSION == "2.4"
+    assert cfg["environment_version"] == ENVIRONMENT_VERSION == "2.3"
     assert cfg["simulation"] == {"dt": 0.1, "max_steps": 1000}
     assert cfg["aircraft"] == {
         "v_min": 150.0, "v_max": 300.0,
@@ -52,7 +47,7 @@ def test_version_and_frozen_bottom_level_contract():
 
 
 def test_action_order_and_relative_zero_target():
-    cfg = legacy_config()["action"]["command"]
+    cfg = config()["action"]["command"]
     own = state(psi=0.4, theta=-0.2, speed=231.0)
     zero = action_to_target(own, np.zeros(3), cfg)
     assert (zero.heading, zero.pitch, zero.speed) == pytest.approx(
@@ -70,7 +65,7 @@ def test_action_order_and_relative_zero_target():
 def test_controller_grid_is_finite_and_respects_load_caps(
     heading_deg, pitch_deg, speed_delta
 ):
-    cfg = legacy_config()["action"]
+    cfg = config()["action"]
     own = state()
     action = np.asarray([
         heading_deg / 180.0, pitch_deg / 60.0, speed_delta / 50.0
@@ -81,8 +76,8 @@ def test_controller_grid_is_finite_and_respects_load_caps(
     assert abs(control.phi) <= np.pi / 2.0 + 1e-12
 
 
-def test_legacy_zero_action_is_trim_and_sustained_commands_stay_in_state_envelope():
-    cfg = legacy_config()
+def test_zero_action_is_trim_and_sustained_commands_stay_in_state_envelope():
+    cfg = config()
     own = state()
     trim = action_to_control(own, np.zeros(3), cfg["action"])
     assert (trim.nx, trim.nz, trim.phi) == pytest.approx((0.0, 1.0, 0.0))
@@ -239,21 +234,19 @@ def test_weapon_rng_reproducibility_and_angle_sign_symmetry():
     assert p_rate == pytest.approx(n_rate, abs=0.03)
 
 
-def test_continuous_window_uses_integer_cooldown_and_exit_cannot_rearm():
-    env = MultiUAVCombatEnv(config()); env.reset(1)
-    attackers, targets = one_alive(state()), one_alive(state(x=1000.0))
-    fired = []
-    for number in range(1, 101):
-        env.steps = number
-        if env._attack_attempts(attackers, targets, env.red_next_fire_step, "red"):
-            fired.append(number)
-    assert fired == list(range(1, 101, 10))
+def test_entry_trigger_is_one_attempt_per_continuous_window_and_rearms():
+    env = MultiUAVCombatEnv(config())
+    env.reset(1)
+    attackers = one_alive(state())
+    targets = one_alive(state(x=1000.0))
+    fire_states = [FireState() for _ in range(4)]
+    counts = [len(env._entry_attempts(attackers, targets, fire_states, "red"))]
+    counts += [len(env._entry_attempts(attackers, targets, fire_states, "red")) for _ in range(99)]
+    assert sum(counts) == 1
     targets[0].x = 5000.0
-    assert not env._attack_attempts(attackers, targets, env.red_next_fire_step, "red")
+    assert env._entry_attempts(attackers, targets, fire_states, "red") == []
     targets[0].x = 1000.0
-    assert not env._attack_attempts(attackers, targets, env.red_next_fire_step, "red")
-    env.steps = 101
-    assert len(env._attack_attempts(attackers, targets, env.red_next_fire_step, "red")) == 1
+    assert len(env._entry_attempts(attackers, targets, fire_states, "red")) == 1
 
 
 def test_random_diameter_scenario_contract_over_1000_resets():

@@ -1,4 +1,4 @@
-"""On-policy MAPPO runner for independent single-round episodes."""
+"""On-policy MAPPO runner using long-lived parallel combat environments."""
 from __future__ import annotations
 
 import csv
@@ -7,56 +7,54 @@ import math
 from pathlib import Path
 from typing import Any
 import numpy as np
+from algorithm.common.metrics import episode_is_timeout
 import torch
 
-from env.config import ENVIRONMENT_VERSION
-from env.combat_env import MultiUAVCombatEnv
+from env.config import environment_dimensions
 from .trainer import MAPPO_IMPL_VERSION, MAPPOTrainer, RolloutBatch
 from algorithm.common.evaluator import (
     episode_return_metrics,
     evaluate,
+    aggregate_combat_records,
 )
 from algorithm.common.vector_env import ParallelVectorEnv
 from algorithm.common.checkpoint import (
     evaluation_selection_key,
     validate_checkpoint_for_resume,
 )
-from algorithm.common.protocol import config_sha256, validate_single_round_environment_config
-from algorithm.common.training_metrics_logging import TrainingMetricsSnapshots
+from algorithm.common.protocol import config_sha256
+from algorithm.common.critic_protocol import layer_width
 
 
-class MAPPOTrainingRunner(TrainingMetricsSnapshots):
+class MAPPOTrainingRunner:
     def __init__(self, env_config: dict, algorithm_config: dict,
                  num_envs: int | None = None,
                  total_sampled_steps: int | None = None,
                  device: str | None = None, seed: int | None = None,
                  output_dir: str | Path | None = None,
                  smoke: bool = False) -> None:
-        validate_single_round_environment_config(env_config)
         self.env_config, self.algorithm_config = env_config, algorithm_config
-        self.actor_initialization = None
         self.smoke = bool(smoke)
         training, network = algorithm_config["training"], algorithm_config["network"]
         implementation = algorithm_config["implementation"]
         configured = (int(network["observation_dim"]), int(network["action_dim"]),
                       int(network["num_agents"]))
-        expected = (MultiUAVCombatEnv.observation_dim, MultiUAVCombatEnv.action_dim,
-                    MultiUAVCombatEnv.team_size)
+        expected = environment_dimensions(env_config)
         if configured != expected:
             raise ValueError(f"network/environment dimension mismatch: configured obs/action/agents={configured}, environment={expected}")
         self.observation_dim, self.action_dim, self.num_agents = configured
         self.num_envs = int(num_envs or training["num_train_envs"])
         self.total_sampled_steps = int(total_sampled_steps or training["total_sampled_steps"])
         self.device = str(device or training["device"])
-        if torch.device(self.device).type != "cuda" or not torch.cuda.is_available():
-            raise RuntimeError("CUDA is mandatory for training; no CPU fallback")
         self.seed = int(training["seed"] if seed is None else seed)
         if output_dir is None:
             raise ValueError("output_dir must be the final run directory")
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.rollout_steps = 4 if smoke else int(training["rollout_steps"])
-        hidden_dim = 64 if smoke else int(network["actor_hidden_layers"][0])
+        actor_width = layer_width(network, "actor_hidden_layers")
+        critic_width = layer_width(network, "critic_hidden_layers")
+        hidden_dim = 64 if smoke else actor_width
         self.effective_hidden_dim = hidden_dim
         self.trainer = MAPPOTrainer(
             self.observation_dim, self.action_dim, self.num_agents, hidden_dim,
@@ -73,6 +71,11 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
             str(implementation["critic_activation"]),
             float(implementation["log_std_min"]), float(implementation["log_std_max"]),
             critic_type=str(network.get("critic_type", "attention")),
+            policy_std_mode=implementation.get("policy_std_mode", "state_dependent"),
+            log_std_init=float(implementation.get("log_std_init", -.5)),
+            mean_head_init_gain=float(implementation.get("mean_head_init_gain", .01)),
+            target_kl=training.get("target_kl"),
+            critic_hidden_dim=64 if smoke else critic_width,
         )
         evaluation_base = int(implementation["evaluation_seed_base"])
         self.evaluation_seeds = list(range(
@@ -100,19 +103,17 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
         self.next_console_log = self.console_interval
         self.next_evaluation = self.evaluation_interval
         self.next_checkpoint = self.checkpoint_interval
-        self.initialize_training_metrics_logging()
 
     def startup_summary(self) -> dict[str, Any]:
         return {
             "algorithm": "MAPPO", "mode": "smoke" if self.smoke else "formal",
-            "task_type": self.env_config["task_type"],
-            "action_semantics": self.env_config["action_semantics"],
-            "actor_initialization": self.actor_initialization,
             "device": self.device, "observation_dim": self.observation_dim,
             "action_dim": self.action_dim, "num_agents": self.num_agents,
             "effective_hidden_dim": self.effective_hidden_dim,
             "critic_type": self.trainer.critic_type,
-            "attention_heads": self.trainer.attention_heads,
+            "attention_heads": self.trainer.attention_heads if self.trainer.critic_type == "attention" else "n/a",
+            "actor_hidden_dim": self.trainer.actor_hidden_dim,
+            "critic_hidden_dim": self.trainer.critic_hidden_dim,
             "actor_parameter_count":sum(p.numel() for p in self.trainer.actor.parameters()),
             "critic_parameter_count":sum(p.numel() for p in self.trainer.critic.parameters()),
             "total_parameter_count":sum(p.numel() for p in self.trainer.actor.parameters())+sum(p.numel() for p in self.trainer.critic.parameters()),
@@ -124,9 +125,7 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
             "gamma": self.trainer.gamma, "gae_lambda": self.trainer.gae_lambda,
             "clip_ratio": self.trainer.clip_ratio,
             "entropy_coefficient": self.trainer.entropy_coefficient,
-            "environment_variant": self.env_config.get(
-                "environment_variant"
-            ),
+            "environment_version": self.env_config["environment_version"],
             "max_steps": int(self.env_config["simulation"]["max_steps"]),
         }
 
@@ -134,14 +133,14 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
         s = self.startup_summary()
         return (f"[START] algorithm=MAPPO | mode={s['mode']} | device={s['device']} "
                 f"| obs={s['observation_dim']} | act={s['action_dim']} | agents={s['num_agents']} "
-                f"| hidden={s['effective_hidden_dim']} | critic={s['critic_type']} | heads={s['attention_heads']} "
+                f"| hidden={s['effective_hidden_dim']} | actor_hidden={s['actor_hidden_dim']} | critic_hidden={s['critic_hidden_dim']} | critic={s['critic_type']} | heads={s['attention_heads']} "
                 f"| envs={s['num_envs_M']} | workers={s['environment_workers']} "
                 f"| backend={s['environment_backend']} | seed={s['seed']} "
                 f"| total={s['total_sampled_steps']} | rollout={s['rollout_steps']} "
                 f"| epochs={s['ppo_epochs']} | minibatch={s['minibatch_size']} "
                 f"| gamma={s['gamma']} | lambda={s['gae_lambda']} | clip={s['clip_ratio']} "
-                f"| variant={s['environment_variant']} "
-                f"| max_steps={s['max_steps']}")
+                f"| max_steps={s['max_steps']}" +
+                (f" | environment_version={s['environment_version']}" if s['environment_version'] in ('3.14','3.15','3.16','3.17','3.18','3.19','3.20','3.21','3.22','3.23','3.24','3.25','3.26','3.27','3.28','3.29','3.30','3.31') else ""))
 
     @staticmethod
     def _display(value: float | None, digits: int) -> str:
@@ -160,8 +159,6 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
         }
 
     def train_log_line(self) -> str:
-        if self.env_config["task_type"] == "pursuit":
-            return f"[TRAIN] task=pursuit | steps={self.trainer.sampled_steps}/{self.total_sampled_steps} | episodes={len(self.completed_records)}"
         r = self.recent_episode_metrics()
         percent = 100.0 * self.trainer.sampled_steps / self.total_sampled_steps
         return (f"[TRAIN] steps={self.trainer.sampled_steps}/{self.total_sampled_steps} ({percent:.1f}%) "
@@ -176,8 +173,6 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
 
     @staticmethod
     def evaluation_log_line(r: dict[str, float]) -> str:
-        if r.get("task_type") == "pursuit":
-            return f"[EVAL] task=pursuit | return={r['average_return']:.2f} | mean_distance_m={r['mean_nearest_distance']:.2f}"
         return (f"[EVAL] steps={int(r['sampled_steps'])} | return={r['average_return']:.2f} "
                 f"| agent_return={r['average_agent_return']:.2f} | win={r['win_rate']:.2f} "
                 f"| red_loss={r['average_red_loss']:.2f} | ep_len={r['average_episode_length']:.1f}")
@@ -188,8 +183,6 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
 
     @staticmethod
     def done_log_line(s: dict[str, Any]) -> str:
-        if s.get("task_type") == "pursuit":
-            return f"[DONE] task=pursuit | steps={s['sampled_steps']} | episodes={s['completed_episodes']} | return={s['average_return']:.2f}"
         return (f"[DONE] algorithm=MAPPO | steps={s['sampled_steps']} "
                 f"| episodes={s['completed_episodes']} | return={s['average_return']:.2f} "
                 f"| win={s['win_rate']:.2f} | red_loss={s['average_red_loss']:.2f}")
@@ -208,32 +201,53 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
                 self.agent_episode_returns[index].fill(0.0)
         return rows
 
-    def _write_step_metrics(self, result, rows: list[dict[str, Any]]) -> None:
-        if self.env_config["task_type"] == "pursuit":
-            from algorithm.common.pursuit_metrics import pursuit_step_metrics
-            record = pursuit_step_metrics(result, self.trainer.sampled_steps, self.last_metrics)
-            with (self.output_dir / "training_metrics.jsonl").open("a", encoding="utf-8") as stream:
-                stream.write(json.dumps(record, separators=(",", ":")) + "\n")
-            return
+    def _begin_rollout_metrics(self) -> None:
+        self._rollout_metrics = {"vector_steps": 0, "sampled_steps": 0,
+                                 "sums": {}, "counts": {}, "completed_rows": []}
+
+    def _accumulate_rollout_metrics(self, result, rows: list[dict[str, Any]]) -> None:
+        metrics = self._rollout_metrics
+        metrics["vector_steps"] += 1
+        metrics["sampled_steps"] += len(result.infos)
+        metrics["completed_rows"].extend(rows)
+        values = {"mean_step_reward": result.rewards}
+        for name in ("r1", "r2", "r3", "r4"):
+            values[f"mean_{name}_reward"] = np.concatenate([
+                np.asarray(info[f"{name}_rewards"]).reshape(-1) for info in result.infos])
+        if str(getattr(self, 'env_config', {}).get('environment_version')) in ('3.9', '3.10','3.11','3.12','3.13','3.14','3.15','3.16','3.17','3.18','3.19','3.20','3.21','3.22','3.23','3.24','3.25','3.26','3.27','3.28','3.29','3.30','3.31'):
+            for name in ('paper', 'safety', 'extended'):
+                values[f'mean_{name}_reward'] = np.concatenate([
+                    np.asarray(info[f'{name}_rewards']).reshape(-1) for info in result.infos])
+        for side in ("red", "blue"):
+            for field in ("fire_window_pairs", "step_fire_attempts", "step_weapon_hits"):
+                key = f"{side}_{field}"
+                values[key] = [info[key] for info in result.infos]
+        if self.env_config['environment_version'] in ('3.29','3.30','3.31'):
+            from algorithm.common.controller_diagnostics import controller_metric_values
+            values.update(controller_metric_values(result.infos))
+        for key, value in values.items():
+            array = np.asarray(value, dtype=np.float64)
+            metrics["sums"][key] = metrics["sums"].get(key, 0.0) + float(array.sum())
+            metrics["counts"][key] = metrics["counts"].get(key, 0) + array.size
+
+    def _finalize_rollout_metrics(self) -> dict[str, Any]:
+        metrics = self._rollout_metrics
+        rows = metrics["completed_rows"]
         mean = lambda key: float(np.mean([r[key] for r in rows])) if rows else None
         rate = lambda predicate: float(np.mean([predicate(r) for r in rows])) if rows else None
         record = {
+            "record_type": "rollout_summary",
             "sampled_steps": self.trainer.sampled_steps,
-            "mean_step_reward": float(np.mean(result.rewards)),
-            **{f"mean_{name}_reward": float(np.mean(np.stack([
-                info[f"{name}_rewards"] for info in result.infos
-            ]))) for name in ("r1", "r2", "r3", "r4")},
-            **{f"{side}_fire_window_pairs": float(np.mean([
-                info[f"{side}_fire_window_pairs"] for info in result.infos
-            ])) for side in ("red", "blue")},
-            **{f"{side}_step_{event}": float(np.mean([
-                info[f"{side}_step_{event}"] for info in result.infos
-            ])) for side in ("red", "blue") for event in ("fire_attempts", "weapon_hits")},
+            "rollout_update": self.trainer.ppo_update_count,
+            "rollout_vector_steps": metrics["vector_steps"],
+            "rollout_sampled_steps": metrics["sampled_steps"],
+            "completed_episodes_in_rollout": len(rows),
+            **{key: total / metrics["counts"][key] for key, total in metrics["sums"].items()},
             "team_episode_return": mean("team_episode_return"),
             "mean_agent_episode_return": mean("mean_agent_episode_return"),
             "win_rate": mean("red_success"), "loss_rate": mean("blue_win"),
             "draw_rate": mean("draw"),
-            "timeout_rate": rate(lambda r: r["termination_reason"] == "red_failure_timeout"),
+            "timeout_rate": rate(episode_is_timeout),
             **{f"{side}_{event}_episode_rate": rate(
                 lambda r, field=f"{side}_first_{event}_step": r[field] is not None
             ) for side in ("red", "blue") for event in ("fire_window", "attempt", "hit", "kill")},
@@ -247,13 +261,25 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
             **{f"episode_{name}_total": mean(f"episode_{name}_total")
                for name in ("r1", "r2", "r3", "r4")},
             **{key: self.last_metrics.get(key) for key in (
-                "actor_loss", "value_loss", "entropy", "approx_kl", "clip_fraction",
-                "value", "explained_variance", "actor_grad_norm", "critic_grad_norm")},
+                "actor_loss", "value_loss", "entropy", "approx_kl", "clip_fraction")},
         }
+        if rows:
+            record.update(aggregate_combat_records(rows))
+        if str(getattr(self, 'env_config', {}).get('environment_version')) in ('3.9', '3.10','3.11','3.12','3.13','3.14','3.15','3.16','3.17','3.18','3.19','3.20','3.21','3.22','3.23','3.24','3.25','3.26','3.27','3.28','3.29','3.30','3.31'):
+            for name in ('paper_reward', 'safety', 'extended_reward'):
+                record[f'episode_{name}_total'] = mean(f'episode_{name}_total')
+        if str(getattr(self, 'env_config', {}).get('environment_version')) in ('3.10', '3.11','3.12','3.13','3.14','3.15','3.16','3.17','3.18','3.19','3.20','3.21','3.22','3.23','3.24','3.25','3.26','3.27','3.28','3.29','3.30','3.31'):
+            for name in ('paper_nearest_agent_steps', 'target_switches'):
+                record[f'average_blue_{name}'] = mean(f'blue_{name}')
+        return record
+
+    def _write_rollout_metrics(self) -> None:
+        record = self._finalize_rollout_metrics()
         with (self.output_dir / "training_metrics.jsonl").open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(record, separators=(",", ":")) + "\n")
+            stream.write(json.dumps(record) + "\n")
 
     def collect_rollout(self, vector_steps: int | None = None) -> RolloutBatch:
+        self._begin_rollout_metrics()
         storage = {key: [] for key in ("observations", "actions", "raw_actions", "old_log_probs",
                    "rewards", "dones", "alive_masks", "next_observations",
                    "next_alive_masks")}
@@ -275,7 +301,7 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
             rows = self._completed(result)
             self.observations, self.alive_masks = result.observations, self.vector.current_alive_masks.copy()
             self.trainer.sampled_steps += self.num_envs; self.trainer.vector_steps += 1
-            self.record_training_metrics_transition(result, rows, self._write_step_metrics)
+            self._accumulate_rollout_metrics(result, rows)
         return RolloutBatch(**{key: np.stack(value).astype(np.float32)
                                for key, value in storage.items()})
 
@@ -301,6 +327,7 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
                     "a", encoding="utf-8"
                 ) as stream:
                     stream.write(json.dumps(update_record) + "\n")
+                self._write_rollout_metrics()
                 if self.trainer.sampled_steps >= self.next_console_log:
                     print(self.train_log_line(), flush=True)
                     while self.next_console_log <= self.trainer.sampled_steps:
@@ -317,7 +344,6 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
                     self.save_checkpoint(path); print(self.checkpoint_log_line(self.trainer.sampled_steps, path), flush=True)
                     while self.next_checkpoint <= self.trainer.sampled_steps:
                         self.next_checkpoint += self.checkpoint_interval
-            self.finalize_training_metrics_logging(self._write_step_metrics)
             self.save_checkpoint(self.output_dir / "latest.pt")
             return self.summary()
         finally:
@@ -331,6 +357,7 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
             "sampled_steps": self.trainer.sampled_steps,
             "evaluation_seed_base": int(self.evaluation_seeds[0]),
             "evaluation_seed_end": int(self.evaluation_seeds[-1]),
+            **({"environment_version": self.env_config['environment_version']} if self.env_config['environment_version'] in ('3.14','3.15','3.16','3.17','3.18','3.19','3.20','3.21','3.22','3.23','3.24','3.25','3.26','3.27','3.28','3.29','3.30','3.31') else {}),
             **evaluate(self.trainer, self.env_config, self.evaluation_seeds),
         }
 
@@ -341,8 +368,6 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
                 writer.writeheader(); writer.writerows(self.evaluation_history)
 
     def _evaluation_key(self, record: dict[str, float]) -> tuple[float, ...]:
-        if self.env_config["task_type"] == "pursuit":
-            return (-float(record["mean_nearest_distance"]), -float(record["final_nearest_distance"]))
         return evaluation_selection_key(record)
 
     def _consider_best_evaluation(self, record: dict[str, float]) -> bool:
@@ -356,11 +381,7 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
         return True
 
     def save_checkpoint(self, path: str | Path) -> None:
-        self.trainer.save(path, {"environment_version": ENVIRONMENT_VERSION,
-            "actor_initialization": self.actor_initialization,
-            "environment_variant": self.env_config.get("environment_variant"),
-            "task_type": self.env_config["task_type"],
-            "action_semantics": self.env_config["action_semantics"],
+        self.trainer.save(path, {"environment_version": self.env_config["environment_version"],
             "mappo_impl_version": MAPPO_IMPL_VERSION,
             "observation_dim": self.observation_dim,
             "action_dim": self.action_dim,
@@ -371,7 +392,15 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
             "training_total_sampled_steps": self.total_sampled_steps,
             "training_smoke": self.smoke,
             "effective_hidden_dim": self.effective_hidden_dim,
+            "actor_hidden_dim": self.trainer.actor_hidden_dim,
+            "critic_hidden_dim": self.trainer.critic_hidden_dim,
             "critic_type":self.trainer.critic_type,
+            "network_architecture": {
+                "actor_hidden_dim": self.trainer.actor_hidden_dim,
+                "critic_hidden_dim": self.trainer.critic_hidden_dim,
+                **({"attention_heads": self.trainer.attention_heads} if self.trainer.critic_type == "attention" else {}),
+                "critic_type": self.trainer.critic_type,
+            },
             "actor_parameter_count":sum(p.numel() for p in self.trainer.actor.parameters()),
             "critic_parameter_count":sum(p.numel() for p in self.trainer.critic.parameters()),
             "total_parameter_count":sum(p.numel() for p in self.trainer.actor.parameters())+sum(p.numel() for p in self.trainer.critic.parameters()),
@@ -384,12 +413,11 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
     def resume(self, path: str | Path) -> None:
         state = torch.load(path, map_location="cpu", weights_only=False)
         validate_checkpoint_for_resume(
-            state, self.env_config, self.algorithm_config,
-            expected_training_seed=self.seed, expected_num_envs=self.num_envs,
-            expected_smoke=self.smoke,
+            state, self.env_config, self.algorithm_config
         )
         extra = self.trainer.load(path)
-        self.actor_initialization = extra.get("actor_initialization")
+        if extra.get("training_seed") is not None and int(extra["training_seed"]) != self.seed:
+            raise RuntimeError("checkpoint training_seed mismatch")
         previous = np.asarray(extra.get("episode_indices", [0] * self.num_envs), dtype=np.int64)
         if previous.shape != (self.num_envs,):
             raise RuntimeError("checkpoint environment count mismatch")
@@ -401,15 +429,8 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
         self.next_console_log = (self.trainer.sampled_steps // self.console_interval + 1) * self.console_interval
         self.next_evaluation = (self.trainer.sampled_steps // self.evaluation_interval + 1) * self.evaluation_interval
         self.next_checkpoint = (self.trainer.sampled_steps // self.checkpoint_interval + 1) * self.checkpoint_interval
-        self.restore_training_metrics_logging()
 
     def summary(self) -> dict[str, Any]:
-        if self.env_config["task_type"] == "pursuit":
-            from algorithm.common.pursuit_metrics import aggregate_pursuit_records
-            metrics = aggregate_pursuit_records(self.completed_records) if self.completed_records else {"average_return":0.0}
-            return {**self.startup_summary(), **metrics, "sampled_steps":self.trainer.sampled_steps,
-                "completed_episodes":len(self.completed_records), "last_update_metrics":self.last_metrics,
-                "evaluation_history":self.evaluation_history, "best_evaluation":self.best_evaluation}
         mean = lambda key: float(np.mean([r[key] for r in self.completed_records])) if self.completed_records else 0.0
         best = self.best_evaluation or {}
         return {**self.startup_summary(), "sampled_steps": self.trainer.sampled_steps,
@@ -418,7 +439,7 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
             "completed_episodes": len(self.completed_records), "average_return": mean("episode_return"),
             "average_agent_return": mean("mean_agent_episode_return"), "win_rate": mean("red_success"),
             "loss_rate": mean("blue_win"), "draw_rate": mean("draw"),
-            "timeout_rate": float(np.mean([r["termination_reason"] == "red_failure_timeout" for r in self.completed_records])) if self.completed_records else 0.0,
+            "timeout_rate": float(np.mean([episode_is_timeout(r) for r in self.completed_records])) if self.completed_records else 0.0,
             "average_red_loss": mean("red_losses"), "average_blue_loss": mean("blue_losses"),
             "average_red_attack_kills": mean("red_attack_kills"), "average_blue_attack_kills": mean("blue_attack_kills"),
             "total_red_attack_kills": int(sum(r["red_attack_kills"] for r in self.completed_records)),
@@ -430,6 +451,18 @@ class MAPPOTrainingRunner(TrainingMetricsSnapshots):
                for side in ("red", "blue") for event in ("fire_window", "attempt", "hit", "kill")},
             **{f"average_episode_{name}_total": mean(f"episode_{name}_total") for name in ("r1", "r2", "r3", "r4")},
             "last_update_metrics": self.last_metrics, "evaluation_history": self.evaluation_history,
+            **({f"average_blue_{name}": mean(f"blue_{name}")
+                for name in ('paper_nearest_agent_steps', 'target_switches')}
+               if str(getattr(self, 'env_config', {}).get('environment_version')) in ('3.10', '3.11','3.12','3.13','3.14','3.15','3.16','3.17','3.18','3.19','3.20','3.21','3.22','3.23','3.24','3.25','3.26','3.27','3.28','3.29','3.30','3.31') else {}),
+            **({f"average_episode_{name}_total": mean(f"episode_{name}_total")
+                for name in ('paper_reward', 'safety', 'extended_reward')}
+               if str(getattr(self, 'env_config', {}).get('environment_version')) in ('3.9', '3.10','3.11','3.12','3.13','3.14','3.15','3.16','3.17','3.18','3.19','3.20','3.21','3.22','3.23','3.24','3.25','3.26','3.27','3.28','3.29','3.30','3.31') else {}),
+            **({f"average_episode_{name}_total": mean(f"episode_{name}_total")
+                for name in ('individual_event','team_casualty')}
+               if str(getattr(self,'env_config',{}).get('environment_version')) in ('3.3','3.4','3.5','3.6','3.7','3.8','3.9','3.10','3.11','3.12','3.13','3.14','3.15','3.16','3.17','3.18','3.19','3.20','3.21','3.22','3.23','3.24','3.25','3.26','3.27','3.28','3.29','3.30','3.31') else {}),
+            **({f"average_episode_{name}_total": mean(f"episode_{name}_total")
+                for name in ('guide','tactical_offense','tactical_defense','tactical')}
+               if str(getattr(self,'env_config',{}).get('environment_version')) in ('3.6','3.7','3.8','3.9','3.10','3.11','3.12','3.13','3.14','3.15','3.16','3.17','3.18','3.19','3.20','3.21','3.22','3.23','3.24','3.25','3.26','3.27','3.28','3.29','3.30','3.31') else {}),
             "best_evaluation_steps": best.get("sampled_steps"),
             "best_evaluation_win_rate": best.get("win_rate"),
             "best_evaluation_return": best.get("average_return"),

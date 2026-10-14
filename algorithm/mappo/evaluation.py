@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any, Iterable
+import warnings
 
 import torch
 
@@ -20,8 +21,6 @@ def evaluate_mappo_checkpoint(
     evaluation_seeds: Iterable[int],
 ) -> dict[str, Any]:
     """Load one checkpoint and evaluate it under an explicit target protocol."""
-    if torch.device(device).type != "cuda" or not torch.cuda.is_available():
-        raise RuntimeError("CUDA is mandatory for checkpoint evaluation")
     checkpoint = Path(checkpoint_path)
     seeds = [int(seed) for seed in evaluation_seeds]
     if not seeds:
@@ -38,10 +37,7 @@ def evaluate_mappo_checkpoint(
     )
     extra = state.get("extra", {})
     required_protocol_fields = (
-        "task_type",
-        "action_semantics",
         "environment_version",
-        "environment_variant",
         "observation_dim",
         "action_dim",
         "num_agents",
@@ -67,33 +63,24 @@ def evaluate_mappo_checkpoint(
                 f"{provided_algorithm_hash!r}"
             )
     else:
-        raise RuntimeError("checkpoint protocol metadata is incomplete")
-    if extra["environment_config_sha256"] != config_sha256(environment_config):
-        raise RuntimeError("checkpoint environment_config_sha256 mismatch")
+        warnings.warn(
+            "legacy/incomplete checkpoint protocol metadata; evaluation is "
+            "diagnostic only and cannot be formally aggregated",
+            RuntimeWarning,
+        )
     effective_hidden_dim = extra.get("effective_hidden_dim")
     if effective_hidden_dim is None:
         first_weight = state.get("actor", {}).get("backbone.0.weight")
         if hasattr(first_weight, "shape"):
             effective_hidden_dim = int(first_weight.shape[0])
-    configured_hidden_dim = int(
-        algorithm_config["network"]["actor_hidden_layers"][0]
+    from algorithm.common.critic_protocol import checkpoint_widths
+    actor_width, critic_width = checkpoint_widths(state)
+    trainer = build_mappo_trainer(
+        algorithm_config, device, hidden_dim=actor_width, critic_hidden_dim=critic_width
     )
-    if (
-        effective_hidden_dim is not None
-        and int(effective_hidden_dim) != configured_hidden_dim
-    ):
-        trainer = build_mappo_trainer(
-            algorithm_config, device, hidden_dim=int(effective_hidden_dim)
-        )
-    else:
-        trainer = build_mappo_trainer(algorithm_config, device)
     trainer.load(checkpoint)
     result: dict[str, Any] = dict(
         evaluate(trainer, environment_config, seeds)
-    )
-    checkpoint_variant = str(extra.get("environment_variant"))
-    evaluation_variant = str(
-        environment_config.get("environment_variant")
     )
     network = algorithm_config["network"]
     result.update({
@@ -120,16 +107,9 @@ def evaluate_mappo_checkpoint(
         "provided_algorithm_config_sha256": provided_algorithm_hash,
         "protocol_complete": protocol_complete,
         "checkpoint_environment_version": extra.get("environment_version"),
-        "checkpoint_environment_variant": checkpoint_variant,
-        "checkpoint_task_type": extra["task_type"],
-        "checkpoint_action_semantics": extra["action_semantics"],
-        "evaluation_task_type": environment_config["task_type"],
-        "evaluation_action_semantics": environment_config["action_semantics"],
         "evaluation_environment_version": str(
             environment_config["environment_version"]
         ),
-        "evaluation_environment_variant": evaluation_variant,
-        "cross_variant_evaluation": checkpoint_variant != evaluation_variant,
         "mappo_impl_version": state.get("mappo_impl_version"),
         "holdout_seed_base": seeds[0],
         "holdout_seed_end": seeds[-1],

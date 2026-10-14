@@ -4,25 +4,24 @@ from __future__ import annotations
 from copy import deepcopy
 import csv
 import json
-import math
 from pathlib import Path
 from typing import Any
 import numpy as np
-import torch
 
 from algorithm.common.checkpoint import evaluation_selection_key
-from algorithm.common.evaluator import episode_return_metrics
+from algorithm.common.evaluator import episode_return_metrics, aggregate_combat_records
 from algorithm.common.protocol import config_sha256
-from algorithm.common.training_metrics_logging import TrainingMetricsSnapshots
 from algorithm.common.vector_env import ParallelVectorEnv, VectorStep
 from env.config import ENVIRONMENT_VERSION
 from .evaluation import evaluate_madsac
 from .protocol import validate_madsac_config
+from .critic_contract import CRITIC_ARCHITECTURE
+from .console import format_steps, combat_fields
+from algorithm.common.metrics import episode_is_timeout
 from .replay_buffer import JointReplayBuffer
 from .trainer import MADSACTrainer, MADSAC_IMPL_VERSION
 
 
-FUTURE_FINAL_45M = tuple(range(45_000_000, 45_000_200))
 
 
 def advance_sampled_steps(current: int, num_envs: int) -> int:
@@ -30,7 +29,7 @@ def advance_sampled_steps(current: int, num_envs: int) -> int:
     return int(current) + int(num_envs)
 
 
-class MADSACTrainingRunner(TrainingMetricsSnapshots):
+class MADSACTrainingRunner:
     def __init__(self, env_config: dict, algorithm_config: dict,
                  num_envs=None, total_sampled_steps=None, device=None, seed=None,
                  output_dir=None, smoke=False):
@@ -45,8 +44,6 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
         self.num_envs = int(num_envs or training["num_train_envs"])
         self.total_sampled_steps = int(total_sampled_steps or training["total_sampled_steps"])
         self.device = str(device or training["device"])
-        if torch.device(self.device).type != "cuda" or not torch.cuda.is_available():
-            raise RuntimeError("CUDA is mandatory for training; no CPU fallback")
         self.seed = int(training["seed"] if seed is None else seed)
         if self.total_sampled_steps % self.num_envs:
             raise ValueError("total_sampled_steps must be divisible by num_train_envs")
@@ -81,9 +78,9 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
         self.evaluation_seeds = tuple(range(evaluation_base, evaluation_base + evaluation_count))
         self.evaluation_policy_seed = int(implementation["evaluation_policy_seed"])
         self.evaluation_mode = str(implementation["evaluation_mode"])
-        forbidden = (*range(44_000_000, 44_000_050), *FUTURE_FINAL_45M)
+        forbidden = self.evaluation_seeds
         if any(self.seed <= value <= self.seed + self.total_sampled_steps for value in forbidden):
-            raise ValueError("configured training seed interval overlaps development/future-final seeds")
+            raise ValueError("configured training seed interval overlaps evaluation seeds")
         self.vector = ParallelVectorEnv(self.num_envs, self.env_config, self.seed, forbidden)
         self.observations = self.vector.reset()
         self.alive_masks = self.vector.current_alive_masks.copy()
@@ -104,10 +101,10 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
         self.next_console = self.console_interval
         self.next_evaluation = self.evaluation_interval
         self.next_checkpoint = self.checkpoint_interval
-        self.initialize_training_metrics_logging()
 
     def startup_summary(self):
         return {
+            "environment_version": self.env_config["environment_version"],
             "algorithm": "MADSAC", "mode": "smoke" if self.smoke else "formal",
             "device": self.device, "seed": self.seed, "num_envs": self.num_envs,
             "total_sampled_steps": self.total_sampled_steps,
@@ -122,7 +119,6 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
             "minibatch_size": self.minibatch_size,
             "evaluation_mode": self.evaluation_mode,
             "evaluation_policy_seed": self.evaluation_policy_seed,
-            "environment_variant": self.env_config["environment_variant"],
             "max_steps": int(self.env_config["simulation"]["max_steps"]),
             "sampled_steps_unit": "environment_transitions_not_agent_transitions",
             "formal_exact_resume_supported": False,
@@ -130,14 +126,21 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
 
     def start_log_line(self):
         s = self.startup_summary()
-        return (f"[START] algorithm=MADSAC | mode={s['mode']} | device={s['device']} "
-                f"| seed={s['seed']} | envs={s['num_envs']} | total={s['total_sampled_steps']} "
-                f"| obs={s['observation_dim']} | act={s['action_dim']} | agents={s['num_agents']} "
-                f"| hidden={s['hidden_dim']} | heads={s['attention_heads']} | gamma={s['gamma']} "
-                f"| alpha={s['alpha']} | tau={s['tau']} | delay={s['policy_delay']} "
-                f"| replay={s['replay_capacity']} | batch={s['minibatch_size']} "
-                f"| learning_starts={s['learning_starts']} | eval={s['evaluation_mode']} "
-                f"| variant={s['environment_variant']} | max_steps={s['max_steps']}")
+        return (f"[START] MADSAC-v{MADSAC_IMPL_VERSION} | env=v{s['environment_version']} | "
+                f"{s['num_agents']}v{s['num_agents']} | seed={s['seed']} | {s['device']} | "
+                f"envs={s['num_envs']} | steps={format_steps(s['total_sampled_steps'], total=True)} | "
+                f"hidden={s['hidden_dim']} | heads={s['attention_heads']} | "
+                f"batch={s['minibatch_size']} | alpha={s['alpha']} | eval={s['evaluation_mode']}")
+
+    def train_log_line(self):
+        steps = self.trainer.sampled_steps
+        return (f"[TRAIN] {format_steps(steps)}/{format_steps(self.total_sampled_steps, total=True)} "
+                f"({100 * steps / self.total_sampled_steps:.1f}%) | ep={len(self.completed_records)} | "
+                + combat_fields(self.recent_metrics()))
+
+    def evaluation_log_line(self, row, best=False):
+        tag = '[EVAL*]' if best else '[EVAL]'
+        return f"{tag} {format_steps(row['sampled_steps'])} | {self.evaluation_mode} | " + combat_fields(row)
 
     def _completed(self, result: VectorStep):
         self.agent_episode_returns += result.rewards
@@ -167,17 +170,21 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
             "mean_step_reward": float(np.mean(result.rewards)),
             "completed_episodes_this_step": len(rows),
             "team_episode_return": mean("team_episode_return"),
-            "win": mean("red_success"), "loss": mean("blue_win"),
-            "draw": mean("draw"), "episode_length": mean("episode_length"),
-            "timeout": None if not rows else float(np.mean([
-                row["termination_reason"] == "red_failure_timeout" for row in rows])),
             "red_loss": mean("red_losses"), "blue_loss": mean("blue_losses"),
             "red_boundary_exits": mean("red_boundary_exits"),
             "red_ground_losses": mean("red_ground_losses"),
             "replay_size": len(self.replay), **self.last_metrics,
         }
+        if rows:
+            record.update(aggregate_combat_records(rows))
+        if self.env_config['environment_version'] in ('3.29','3.30','3.31'):
+            from algorithm.common.controller_diagnostics import controller_metric_values
+            record.update({key: float(value.mean())
+                           for key, value in controller_metric_values(result.infos).items()})
+        for name in ("r1", "r2", "r3", "r4"):
+            record[f"mean_{name}_reward"] = float(np.mean([info[f"{name}_rewards"] for info in result.infos]))
         with (self.output_dir / "training_metrics.jsonl").open("a", encoding="utf-8") as stream:
-            stream.write(json.dumps(record, separators=(",", ":")) + "\n")
+            stream.write(json.dumps(record) + "\n")
 
     def _write_optimization(self, metrics):
         record = {"sampled_steps": self.trainer.sampled_steps,
@@ -203,24 +210,17 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
                    self.evaluation_mode, self.evaluation_policy_seed,
                )}
         self.evaluation_history.append(row); self._write_evaluation()
-        if self.best_evaluation is None or self._evaluation_key(row) > self._evaluation_key(self.best_evaluation):
+        improved = self.best_evaluation is None or self._evaluation_key(row) > self._evaluation_key(self.best_evaluation)
+        if improved:
             self.best_evaluation = dict(row)
             self.best_sampled_steps = self.trainer.sampled_steps
             self.save_checkpoint(self.output_dir / "best_eval.pt")
-        print(f"[EVAL] steps={self.trainer.sampled_steps} | mode={self.evaluation_mode} "
-              f"| return={row['average_return']:.2f} | win={row['win_rate']:.2f} "
-              f"| loss={row['loss_rate']:.2f} | draw={row['draw_rate']:.2f} "
-              f"| timeout={row['timeout_rate']:.2f} | red_loss={row['average_red_loss']:.2f} "
-              f"| blue_loss={row['average_blue_loss']:.2f} | episode_length={row['average_episode_length']:.1f}", flush=True)
+        print(self.evaluation_log_line(row, improved), flush=True)
         return row
 
     def checkpoint_extra(self):
-        training = self.algorithm_config["training"]
         return {
-            "environment_version": ENVIRONMENT_VERSION,
-            "task_type": self.env_config["task_type"],
-            "action_semantics": self.env_config["action_semantics"],
-            "environment_variant": self.env_config["environment_variant"],
+            "environment_version": self.env_config['environment_version'],
             "environment_config": deepcopy(self.env_config),
             "algorithm_config": deepcopy(self.algorithm_config),
             "environment_config_sha256": config_sha256(self.env_config),
@@ -238,6 +238,7 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
             "replay_capacity": self.replay.capacity,
             "minibatch_size": self.minibatch_size,
             "network_architecture": {
+                **CRITIC_ARCHITECTURE,
                 "actor_class": type(self.trainer.actor).__name__,
                 "critic_class": type(self.trainer.critic1).__name__,
                 "shared_actor": True, "twin_independent_critics": True,
@@ -262,7 +263,6 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
             "sampled_steps_unit": "environment_transitions_not_agent_transitions",
             "paper_reported": deepcopy(self.algorithm_config["metadata"]["paper_reported"]),
             "project_implementation_choice": deepcopy(self.algorithm_config["metadata"]["project_implementation_choice"]),
-            "future_final_45m_untouched": True,
             "formal_exact_resume_supported": False,
             "replay_buffer_in_checkpoint": False,
         }
@@ -272,14 +272,16 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
 
     def recent_metrics(self):
         rows = self.completed_records[-self.recent_episode_window:]
+        mean = lambda key: None if not rows else float(np.mean([row[key] for row in rows]))
+        rate = lambda predicate: None if not rows else float(np.mean([predicate(row) for row in rows]))
         return {
-            "return": None if not rows else float(np.mean([r["team_episode_return"] for r in rows])),
-            **{key: None if not rows else float(np.mean([r[field] for r in rows]))
-               for key, field in {"win": "red_success", "loss": "blue_win", "draw": "draw",
-                                  "red_loss": "red_losses", "blue_loss": "blue_losses",
-                                  "episode_length": "episode_length"}.items()},
-            "timeout": None if not rows else float(np.mean([
-                r["termination_reason"] == "red_failure_timeout" for r in rows])),
+            "red_win_rate": mean("red_success"),
+            "average_red_loss": mean("red_losses"), "average_blue_loss": mean("blue_losses"),
+            "red_attempt_episode_rate": rate(lambda row: row.get("red_first_attempt_step") is not None),
+            "red_kill_episode_rate": rate(lambda row: row.get("red_first_kill_step") is not None),
+            "timeout_rate": rate(episode_is_timeout),
+            "average_episode_length": mean("episode_length"),
+            "average_return": mean("team_episode_return"),
         }
 
     def run(self):
@@ -301,14 +303,9 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
                     for _ in range(self.gradient_steps):
                         self.last_metrics = self.trainer.update(self.replay.sample(self.minibatch_size))
                         self._write_optimization(self.last_metrics)
-                self.record_training_metrics_transition(result, rows, self._write_training_metrics)
+                self._write_training_metrics(result, rows)
                 if self.trainer.sampled_steps >= self.next_console:
-                    recent = self.recent_metrics()
-                    print(f"[TRAIN] steps={self.trainer.sampled_steps}/{self.total_sampled_steps} "
-                          f"| episodes={len(self.completed_records)} | recent_return={recent['return']} "
-                          f"| results={recent} | replay={len(self.replay)} "
-                          f"| critic_updates={self.trainer.critic_update_count} "
-                          f"| actor_updates={self.trainer.actor_update_count}", flush=True)
+                    print(self.train_log_line(), flush=True)
                     while self.next_console <= self.trainer.sampled_steps:
                         self.next_console += self.console_interval
                 if self.trainer.sampled_steps >= self.next_evaluation:
@@ -318,13 +315,12 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
                 if self.trainer.sampled_steps >= self.next_checkpoint:
                     path = self.output_dir / f"checkpoint_{self.trainer.sampled_steps}.pt"
                     self.save_checkpoint(path)
-                    print(f"[CKPT] steps={self.trainer.sampled_steps} | saved={path.name}", flush=True)
+                    print(f"[CKPT] {format_steps(self.trainer.sampled_steps)} | saved", flush=True)
                     while self.next_checkpoint <= self.trainer.sampled_steps:
                         self.next_checkpoint += self.checkpoint_interval
             exact = self.output_dir / f"checkpoint_{self.trainer.sampled_steps}.pt"
             if not exact.exists():
                 self.save_checkpoint(exact)
-            self.finalize_training_metrics_logging(self._write_training_metrics)
             self.save_checkpoint(self.output_dir / "latest.pt")
             self.save_checkpoint(self.output_dir / "final.pt")
             return self.summary()
@@ -334,6 +330,7 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
     def summary(self):
         latest = self.evaluation_history[-1] if self.evaluation_history else None
         return {
+            "environment_version": self.env_config["environment_version"],
             "algorithm": "madsac", "implementation_version": MADSAC_IMPL_VERSION,
             "sampled_steps": self.trainer.sampled_steps,
             "vector_steps": self.trainer.vector_steps,
@@ -347,10 +344,9 @@ class MADSACTrainingRunner(TrainingMetricsSnapshots):
             "sampled_steps_unit": "environment_transitions_not_agent_transitions",
             "formal_exact_resume_supported": False,
             "replay_buffer_in_checkpoint": False,
-            "future_final_45m_untouched": True,
             "protocol": self.startup_summary(),
             "final_optimization_metrics": deepcopy(self.last_metrics),
         }
 
 
-__all__ = ["FUTURE_FINAL_45M", "MADSACTrainingRunner", "advance_sampled_steps"]
+__all__ = ["MADSACTrainingRunner", "advance_sampled_steps"]

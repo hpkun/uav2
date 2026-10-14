@@ -4,9 +4,8 @@ from __future__ import annotations
 import hashlib
 import numpy as np
 import torch
-from algorithm.common.evaluator import episode_return_metrics, aggregate_episode_records
+from algorithm.common.evaluator import episode_return_metrics, aggregate_combat_records
 from env.factory import make_combat_environment
-from algorithm.common.protocol import validate_single_round_environment_config
 
 
 def evaluation_generator(device, seed: int) -> torch.Generator:
@@ -23,12 +22,11 @@ def evaluation_episode_policy_seed(base_policy_seed: int, environment_seed: int)
 
 def evaluate_madsac_episode(trainer, env_config, seed: int, mode="stochastic",
                             generator: torch.Generator | None = None):
-    validate_single_round_environment_config(env_config)
     if mode not in {"stochastic", "deterministic"}:
         raise ValueError("mode must be stochastic or deterministic")
     env = make_combat_environment(env_config)
     observation, _ = env.reset(int(seed))
-    returns = np.zeros(4, dtype=np.float64)
+    returns = np.zeros(env.team_size, dtype=np.float64)
     while True:
         actions = trainer.act(
             observation[None], env.red_alive_mask[None],
@@ -42,12 +40,12 @@ def evaluate_madsac_episode(trainer, env_config, seed: int, mode="stochastic",
 
 
 def aggregate_madsac_records(records):
-    return aggregate_episode_records(records)
+    return aggregate_combat_records(records)
+
 
 
 def evaluate_madsac(trainer, env_config, seeds, mode="stochastic", policy_seed=770001,
                     progress=None):
-    validate_single_round_environment_config(env_config)
     before = trainer.policy_generator.get_state().clone()
     records = []
     for index, seed in enumerate(seeds, 1):

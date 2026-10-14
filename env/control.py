@@ -1,20 +1,11 @@
-"""Direct v3 physical decoding and preserved historical delta controllers."""
+"""Paper action increments mapped to Eq. (2) point-mass controls."""
 from __future__ import annotations
+
 from dataclasses import dataclass
 import numpy as np
 
 from .math_utils import wrap_angle
 from .models import AircraftState, ControlCommand
-
-
-def normalized_action_to_direct_control(action: np.ndarray) -> ControlCommand:
-    """Decode normalized [thrust, lift, roll] without a tracking controller."""
-    values = np.asarray(action, dtype=float)
-    if values.shape != (3,) or not np.isfinite(values).all():
-        raise ValueError("direct action must be a finite vector of shape (3,)")
-    values = np.clip(values, -1.0, 1.0)
-    return ControlCommand(nx=float(2.0 * values[0]), nz=float(5.0 * values[1]),
-                          phi=float((np.pi / 3.0) * values[2]))
 
 
 @dataclass(frozen=True)
@@ -82,6 +73,5 @@ def action_to_control(
 
 
 __all__ = [
-    "normalized_action_to_direct_control",
     "ManeuverTarget", "action_to_control", "action_to_target", "target_to_control"
 ]
